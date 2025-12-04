@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NovaSync - Group Expense Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <h1 class="logo">NovaSync</h1>
+    </div>
+  </header>
+
+  <main>
+    <!-- Auth box -->
+    <section id="authSection" class="card auth-card">
+      <h2 id="authTitle">Login</h2>
+      <p class="auth-subtitle">
+        Simple app for splitting expenses in small groups.
+      </p>
+
+      <div id="authNameRow">
+        <label for="authName">Full Name</label>
+        <input type="text" id="authName" placeholder="e.g. Nandan Sai" />
+      </div>
+
+      <div id="authUsernameRow">
+        <label for="authUsername">Username</label>
+        <input type="text" id="authUsername" placeholder="e.g. nandan08" />
+      </div>
+
+      <label for="authIdentifier">Contact (email / phone)</label>
+      <input type="text" id="authIdentifier" placeholder="email@example.com or 9876543210" />
+
+      <label for="authPassword">Password</label>
+      <input type="password" id="authPassword" />
+
+      <button id="authSubmitBtn">Login</button>
+
+      <p class="small switch-auth">
+        <span id="toggleAuthModeText">New user?</span>
+        <a class="link" id="toggleAuthModeLink">Create an account</a>
+      </p>
+
+      <p class="small error" id="authError"></p>
+    </section>
+
+    <!-- Main app layout (hidden initially) -->
+    <section id="appSection" class="hidden">
+      <div class="layout">
+        <div class="column">
+          <h2>Groups</h2>
+          <div id="groupList">
+            <!-- will be filled by JS later -->
+          </div>
+        </div>
+
+        <div class="column">
+          <h2>Group Details</h2>
+          <div id="groupDetailPlaceholder" class="placeholder">
+            Select a group from the left side to see details and expenses.
+          </div>
+        </div>
+
+        <div class="column">
+          <h2>Balances / Chat</h2>
+          <div id="rightPanePlaceholder" class="placeholder">
+            Once a group is selected, balances and messages will appear here.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
