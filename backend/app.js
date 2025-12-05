@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const connectDB = require('./config/db');
 
+const authRoutes = require('./routes/authRoutes');
+const groupRoutes = require('./routes/groupRoutes');
 const app = express();
 
 app.use(cors());
@@ -11,8 +14,7 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true });
 });
 
-// TODO: routes will be added here later
-// const authRoutes = require('./routes/authRoutes');
-// app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/groups', groupRoutes);
 
 module.exports = app;
