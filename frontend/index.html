@@ -41,7 +41,7 @@
 
       <p class="small switch-auth">
         <span id="toggleAuthModeText">New user?</span>
-        <a class="link" id="toggleAuthModeLink">Create an account</a>
+        <a href="#" id="toggleAuthModeLink">Create an account</a>
       </p>
 
       <p class="small error" id="authError"></p>
@@ -55,6 +55,14 @@
           <div id="groupList">
             <!-- will be filled by JS later -->
           </div>
+          <h3>Create Group</h3>
+          <label>Group Name</label>
+          <input type="text" id="groupNameInput" placeholder="e.g. Goa Trip" />
+
+          <label>Group Description</label>
+          <input type="text" id="groupDescInput" placeholder="e.g. Expenses of Goa Trip" />
+
+          <button id="createGroupBtn">Create Group</button>
         </div>
 
         <div class="column">
