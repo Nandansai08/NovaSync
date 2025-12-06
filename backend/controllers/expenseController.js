@@ -1,0 +1,113 @@
+const Expense = require('../models/Expense');
+const GroupMember = require('../models/GroupMember');
+const settlementService = require('../services/settlementService');
+
+exports.addExpense = async (req, res) => {
+    try {
+        const { description, amount, groupId } = req.body;
+        const userId = req.user.id; // Payer
+
+        if (!description || !amount || !groupId) {
+            return res.status(400).json({ error: "Missing fields" });
+        }
+
+        // Default strategy: Split equally among ALL group members
+        // 1. Get all members
+        const members = await GroupMember.find({ groupId });
+        if (!members.length) {
+            console.log("AddExpense: No members found for group", groupId);
+            return res.status(400).json({ error: "Group has no members" });
+        }
+
+        // Round to 2 decimals to avoid floating point issues
+        const splitAmount = Number((Number(amount) / members.length).toFixed(2));
+
+        // 2. Create splits array
+        const splits = members.map(m => ({
+            userId: m.userId,
+            amount: splitAmount // Each person's share
+        }));
+
+        // 3. Create Expense
+        const expense = await Expense.create({
+            description,
+            amount: Number(amount),
+            paidBy: userId,
+            groupId,
+            splitType: 'EQUAL',
+            splits,
+            date: new Date()
+        });
+
+        res.json(expense);
+    } catch (err) {
+        console.error("Add expense error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};
+
+exports.getGroupExpenses = async (req, res) => {
+    try {
+        const { groupId } = req.params;
+
+        // Sort by date desc
+        const expenses = await Expense.find({ groupId })
+            .sort({ date: -1 })
+            .populate('paidBy', 'name username');
+
+        res.json(expenses);
+    } catch (err) {
+        console.error("Get expenses error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};
+
+exports.getGroupBalances = async (req, res) => {
+    try {
+        const { groupId } = req.params;
+
+        const expenses = await Expense.find({ groupId });
+        const members = await GroupMember.find({ groupId }).populate('userId', 'name username');
+
+        const { balances, plan } = settlementService.calculateBalances(expenses, members);
+
+        const userMap = {};
+        members.forEach(m => {
+            if (m.userId) userMap[m.userId._id.toString()] = m.userId;
+        });
+
+        const readablePlan = plan.map(p => ({
+            from: userMap[p.from]?.name || 'Unknown',
+            to: userMap[p.to]?.name || 'Unknown',
+            amount: p.amount
+        }));
+
+        res.json({ balances, plan: readablePlan });
+    } catch (err) {
+        console.error("Balance calc error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};
+
+exports.deleteExpense = async (req, res) => {
+    try {
+        const { expenseId } = req.params;
+        const userId = req.user.id;
+
+        const expense = await Expense.findById(expenseId);
+        if (!expense) return res.status(404).json({ error: "Expense not found" });
+
+        // Authorization: Only payer or group creator can delete? For now, only payer.
+        // Assuming paidBy is ObjectId
+        if (expense.paidBy.toString() !== userId) {
+            return res.status(403).json({ error: "Only the payer can delete this expense" });
+        }
+
+        await Expense.findByIdAndDelete(expenseId);
+        res.json({ message: "Expense deleted" });
+
+    } catch (err) {
+        console.error("Delete expense error", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};

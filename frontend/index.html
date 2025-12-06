@@ -97,18 +97,38 @@
               <div id="groupMeta" class="small">Description</div>
               <div id="groupMemberCount" class="small" style="margin-top:0.2rem;">0 members</div>
             </div>
+            <div>
+              <button id="openAddMemberBtn" class="small secondary" style="margin-right:0.3rem;">+ Member</button>
+              <button id="openAddExpenseBtn" class="small">+ Expense</button>
+            </div>
           </div>
 
           <div class="section-divider"></div>
-          <h3>Members</h3>
-          <div id="memberListArea"></div>
+
+          <div class="row" style="align-items:flex-start;">
+            <div style="flex:1;">
+              <h3>Members</h3>
+              <div id="memberListArea"></div>
+
+              <h3 style="margin-top:1.5rem;">Balances</h3>
+              <div id="balancesArea" class="small">
+                <p>Loading...</p>
+              </div>
+            </div>
+            <div style="flex:1.5;">
+              <h3>Expenses</h3>
+              <div id="expenseListArea"></div>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Right: Activity Placeholder -->
       <div class="column">
         <h3>Activity</h3>
-        <p class="small">Recent expenses (Coming soon)</p>
+        <div id="activityList">
+          <p class="small">Detailed recent activity will appear here.</p>
+        </div>
       </div>
     </div>
 
@@ -144,6 +164,90 @@
         <h2>Group Invites</h2>
         <p class="small">Pending invites...</p>
         <div id="groupInvitesList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Expense Modal -->
+  <div id="addExpenseModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add Expense</h3>
+      </div>
+      <div>
+        <label>Description</label>
+        <input type="text" id="expenseDesc" placeholder="e.g. Dinner" />
+        <label>Amount</label>
+        <input type="number" id="expenseAmount" placeholder="0.00" />
+        <p class="small" style="margin-top:0.5rem; opacity:0.7;">Splits equally among all members.</p>
+        <p id="addExpenseError" style="color:#fecaca;margin-top:0.4rem;font-size:0.8rem;"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" id="cancelAddExpenseBtn">Cancel</button>
+        <button id="confirmAddExpenseBtn">Add Expense</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div id="profileModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Edit Profile</h3>
+      </div>
+      <div>
+        <label>Full Name</label>
+        <input type="text" id="profileName" placeholder="Your Name" />
+        <label>Bio / Status</label>
+        <input type="text" id="profileBio" placeholder="Available..." />
+        <p id="profileError" style="color:#fecaca;margin-top:0.4rem;font-size:0.8rem;"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" id="cancelProfileBtn">Cancel</button>
+        <button id="saveProfileBtn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Member Modal -->
+  <div id="addMemberModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add Member</h3>
+      </div>
+      <div>
+        <label>Username to invite</label>
+        <input type="text" id="addMemberUsername" placeholder="Enter username" />
+        <p id="addMemberError" style="color:#fecaca;margin-top:0.4rem;font-size:0.8rem;"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" id="cancelAddMemberBtn">Cancel</button>
+        <button id="confirmAddMemberBtn">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expense Detail Modal -->
+  <div id="expenseDetailModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="detailDescription">Expense Details</h3>
+        <button class="icon-button" id="closeDetailBtn">×</button>
+      </div>
+      <div>
+        <h2 id="detailAmount" style="color:var(--brand-primary); margin-bottom:0.5rem;">$0.00</h2>
+        <p class="small" id="detailMeta">Paid by X on Date</p>
+
+        <h4 style="margin-top:1rem; margin-bottom:0.5rem;">Split Details</h4>
+        <div id="detailSplitsList" class="small"
+          style="max-height:150px; overflow-y:auto; background:var(--bg-secondary); padding:0.5rem; border-radius:8px;">
+          <!-- Splits go here -->
+        </div>
+
+        <div style="margin-top:1.5rem; display:flex; gap:0.5rem;">
+          <button class="secondary" id="deleteExpenseBtn" style="color:#ef4444; border-color:#ef4444;">Delete
+            Expense</button>
+        </div>
       </div>
     </div>
   </div>

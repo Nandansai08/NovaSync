@@ -1,5 +1,30 @@
 const Group = require('../models/Group');
 const GroupMember = require('../models/GroupMember');
+const User = require('../models/User');
+
+exports.addMember = async (req, res) => {
+  try {
+    const { groupId, username } = req.body;
+
+    // Find user
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if already in group
+    const exists = await GroupMember.findOne({ groupId, userId: user._id });
+    if (exists) {
+      return res.status(400).json({ error: "User already in group" });
+    }
+
+    await GroupMember.create({ groupId, userId: user._id });
+    res.json({ message: "Member added", user: { id: user._id, name: user.name, username: user.username } });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
 exports.createGroup = async (req, res) => {
   try {
