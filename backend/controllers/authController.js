@@ -63,3 +63,33 @@ exports.login = async (req, res) => {
     res.json({ error: "Server error" });
   }
 };
+
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json(user);
+  } catch (e) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, bio, avatar } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (name) user.name = name;
+    if (bio !== undefined) user.bio = bio;
+    if (avatar) user.avatar = avatar;
+
+    await user.save();
+    res.json({ message: "Profile updated", user: { id: user._id, name: user.name, bio: user.bio, avatar: user.avatar } });
+
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Server error" });
+  }
+};

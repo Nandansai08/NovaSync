@@ -90,3 +90,40 @@ exports.getGroupDetail = async (req, res) => {
     res.json({ error: "Server error" });
   }
 };
+
+exports.removeMember = async (req, res) => {
+  try {
+    const { groupId, userId } = req.params;
+    const group = await Group.findById(groupId);
+
+    if (!group) return res.status(404).json({ error: "Group not found" });
+
+    // Only creator can remove members
+    if (group.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Only group admin can remove members" });
+    }
+
+    // Cannot remove self via this route (use leave instead)
+    if (userId === req.user.id) {
+      return res.status(400).json({ error: "Cannot remove self. Use 'Leave Group'." });
+    }
+
+    await GroupMember.findOneAndDelete({ groupId, userId });
+    res.json({ message: "Member removed" });
+
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.leaveGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    await GroupMember.findOneAndDelete({ groupId, userId: req.user.id });
+    res.json({ message: "You have left the group" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Server error" });
+  }
+};

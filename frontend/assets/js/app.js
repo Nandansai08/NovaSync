@@ -81,7 +81,13 @@ const profileNameInput = document.getElementById("profileName");
 const profileBioInput = document.getElementById("profileBio");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
 const cancelProfileBtn = document.getElementById("cancelProfileBtn");
+const closeProfileBtn = document.getElementById("closeProfileBtn");
 const menuProfileBtn = document.getElementById("menuProfile");
+const currentAvatarDisplay = document.getElementById("currentAvatarDisplay");
+const avatarGrid = document.getElementById("avatarGrid");
+
+const AVATARS = ["😊", "😎", "🐱", "🐶", "🦊", "🦁", "🐸", "🦄", "🤖", "👻", "👽", "💩"];
+let currentAvatar = "😊";
 
 // Add Member Modal
 const openAddMemberBtn = document.getElementById("openAddMemberBtn");
@@ -337,7 +343,10 @@ async function loadGroupDetail(groupId) {
 
 // Load Balances
 async function loadGroupBalances(groupId) {
-  balancesArea.innerHTML = "<p>Loading...</p>";
+  const settlementPlanArea = document.getElementById("settlementPlanArea");
+
+  if (settlementPlanArea) settlementPlanArea.innerHTML = "<p>Loading...</p>";
+
   try {
     const tokens = getToken();
     if (!tokens) return;
@@ -347,26 +356,129 @@ async function loadGroupBalances(groupId) {
     const data = await res.json();
 
     if (data.error) {
-      balancesArea.innerHTML = `<p class="error">${data.error}</p>`;
+      if (settlementPlanArea) settlementPlanArea.innerHTML = `<p class="error">${data.error}</p>`;
       return;
     }
 
-    if (!data.plan || data.plan.length === 0) {
-      balancesArea.innerHTML = "<p>All settled up!</p>";
-      return;
+    // Display settlement plan
+    if (settlementPlanArea) {
+      if (!data.plan || data.plan.length === 0) {
+        settlementPlanArea.innerHTML = "<p style='text-align:center; padding: 20px;'>All settled up! ✅</p>";
+      } else {
+        let planHTML = "";
+        data.plan.forEach(p => {
+          planHTML += `
+            <div style="margin-bottom: 0.75rem; padding: 12px; background: #1e2530; border-radius: 8px; border-left: 4px solid #38bdf8;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: #f0f0f0;">${p.from}</strong> 
+                  <span style="color: #94a3b8;">→</span> 
+                  <strong style="color: #f0f0f0;">${p.to}</strong>
+                </div>
+                <span style="color: #38bdf8; font-weight: 700; font-size: 1.1rem;">₹${p.amount.toFixed(2)}</span>
+              </div>
+            </div>
+          `;
+        });
+        settlementPlanArea.innerHTML = planHTML;
+      }
     }
 
-    balancesArea.innerHTML = "";
-    data.plan.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "small";
-      div.style.marginBottom = "0.4rem";
-      div.innerHTML = `<strong>${p.from}</strong> owes <strong>${p.to}</strong>: <span style="color:var(--brand-primary);">${p.amount}</span>`;
-      balancesArea.appendChild(div);
-    });
   } catch (e) {
     console.error(e);
-    balancesArea.innerHTML = "<p>Error loading balances</p>";
+    if (settlementPlanArea) settlementPlanArea.innerHTML = "<p>Error loading settlement plan</p>";
+  }
+}
+
+// Load and Render Expenses
+async function loadGroupExpenses(groupId) {
+  expenseListArea.innerHTML = "<p>Loading expenses...</p>";
+  try {
+    const res = await fetch(`${API_BASE}/expenses/group/${groupId}`, {
+      headers: { "Authorization": getToken() }
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      expenseListArea.innerHTML = `<p class="error">${data.error}</p>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      expenseListArea.innerHTML = "<p class='small'>No expenses yet. Add one!</p>";
+      return;
+    }
+
+    renderExpenses(data);
+  } catch (e) {
+    console.error(e);
+    expenseListArea.innerHTML = "<p>Error loading expenses</p>";
+  }
+}
+
+function renderExpenses(expenses) {
+  expenseListArea.innerHTML = "";
+  expenses.forEach(ex => {
+    const div = document.createElement("div");
+    div.className = "expense-card";
+    div.style.cursor = "pointer";
+    div.innerHTML = `
+      <div class="flex-space">
+        <strong>${ex.description}</strong>
+        <span style="color:var(--brand-primary);">₹${parseFloat(ex.amount).toFixed(2)}</span>
+      </div>
+      <div class="small" style="opacity:0.7; margin-top:0.2rem;">
+        Paid by ${ex.paidBy ? ex.paidBy.name : 'Unknown'}
+      </div>
+    `;
+    div.addEventListener("click", () => showExpenseDetails(ex));
+    expenseListArea.appendChild(div);
+  });
+}
+
+function showExpenseDetails(ex) {
+  currentSelectedExpenseId = ex._id;
+  expenseDetailModal.classList.remove("hidden");
+  detailDescription.textContent = ex.description;
+  detailAmount.textContent = "₹" + parseFloat(ex.amount).toFixed(2);
+  const date = new Date(ex.date).toLocaleString();
+  const payer = ex.paidBy ? ex.paidBy.name : "Unknown";
+  detailMeta.textContent = `Paid by ${payer} on ${date}`;
+
+  // Render splits
+  detailSplitsList.innerHTML = "";
+  if (ex.splits && ex.splits.length > 0) {
+    ex.splits.forEach(s => {
+      const li = document.createElement("li");
+      li.textContent = `${s.userId.name}: ₹${parseFloat(s.amount).toFixed(2)}`;
+      detailSplitsList.appendChild(li);
+    });
+  } else {
+    detailSplitsList.innerHTML = "<li>No split details available</li>";
+  }
+}
+
+async function deleteExpense() {
+  if (!confirm("Delete this expense?")) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/expenses/${currentSelectedExpenseId}`, {
+      method: 'DELETE',
+      headers: { "Authorization": getToken() }
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    expenseDetailModal.classList.add("hidden");
+    loadGroupExpenses(currentGroupId);
+    loadGroupBalances(currentGroupId);
+  } catch (e) {
+    console.error(e);
+    alert("Error deleting expense");
   }
 }
 
@@ -391,10 +503,60 @@ function renderGroupDetailView(group, members) {
     row.style.marginTop = '0.15rem';
     row.innerHTML = `
             <div>${m.name} (@${m.username})</div>
-            <!-- Remove button placeholder -->
+            ${(typeof currentGroupId === 'undefined' || !group.createdBy) ? '' :
+        (group.createdBy === localStorage.getItem("userId") && m.id !== localStorage.getItem("userId")
+          ? `<button class="text-danger small" onclick="removeMember('${group._id}', '${m.id}')" style="padding:0;font-size:0.7rem;">Remove</button>`
+          : '')
+      }
         `;
     memberListArea.appendChild(row);
   });
+
+  // Add Remove Member / Leave Group handlers if not exists
+  window.removeMember = async (groupId, userId) => {
+    if (!confirm("Remove this member?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/groups/${groupId}/members/${userId}`, {
+        method: 'DELETE',
+        headers: { "Authorization": getToken() }
+      });
+      const d = await res.json();
+      if (d.error) alert(d.error);
+      else {
+        loadGroupDetail(groupId);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  // Check if we should show Leave Group button
+  // We need to inject it into the header or near members
+  const existingLeaveBtn = document.getElementById("leaveGroupBtn");
+  if (existingLeaveBtn) existingLeaveBtn.remove();
+
+  const leaveBtn = document.createElement("button");
+  leaveBtn.id = "leaveGroupBtn";
+  leaveBtn.className = "secondary small text-danger";
+  leaveBtn.style.marginTop = "1rem";
+  leaveBtn.textContent = "Leave Group";
+  leaveBtn.onclick = async () => {
+    if (!confirm("Are you sure you want to leave this group?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/groups/${group._id}/leave`, {
+        method: 'POST',
+        headers: { "Authorization": getToken() }
+      });
+      const d = await res.json();
+      if (d.error) alert(d.error);
+      else {
+        alert("You left the group.");
+        pageMode = "main";
+        loadMyGroups();
+        applyPageMode();
+      }
+    } catch (e) { console.error(e); }
+  };
+  memberListArea.appendChild(leaveBtn);
+
 }
 
 
@@ -691,29 +853,114 @@ document.addEventListener('click', (e) => {
 });
 
 // Profile Logic
-menuProfileBtn.addEventListener("click", () => {
+
+function renderAvatarSelection() {
+  avatarGrid.innerHTML = "";
+  AVATARS.forEach(emoji => {
+    const span = document.createElement("span");
+    span.textContent = emoji;
+    span.style.cursor = "pointer";
+    span.style.fontSize = "1.5rem";
+    span.style.padding = "0.2rem";
+    if (emoji === currentAvatar) {
+      span.style.border = "2px solid var(--brand-primary)";
+      span.style.borderRadius = "50%";
+    }
+    span.addEventListener("click", () => {
+      currentAvatar = emoji;
+      currentAvatarDisplay.textContent = emoji;
+      renderAvatarSelection();
+    });
+    avatarGrid.appendChild(span);
+  });
+}
+
+menuProfileBtn.addEventListener("click", async () => {
   headerMenu.classList.add("hidden");
   profileModal.classList.remove("hidden");
-  // Pre-fill
-  // In real app we fetch user profile. 
-  // Here we use localStorage or just placeholder.
-  profileNameInput.value = localStorage.getItem("name") || "";
-});
 
-cancelProfileBtn.addEventListener("click", () => {
-  profileModal.classList.add("hidden");
-});
-
-saveProfileBtn.addEventListener("click", () => {
-  const newName = profileNameInput.value.trim();
-  if (newName) {
-    // Mock save
-    localStorage.setItem("name", newName); 
-    alert("Profile updated (Local Only)");
-    profileModal.classList.add("hidden");
+  // Fetch latest profile
+  try {
+    const res = await fetch(`${API_BASE}/auth/profile`, {
+      headers: { "Authorization": getToken() }
+    });
+    const user = await res.json();
+    if (user) {
+      profileNameInput.value = user.name || "";
+      profileBioInput.value = user.bio || "";
+      currentAvatar = user.avatar || "😊";
+      currentAvatarDisplay.textContent = currentAvatar;
+    }
+    renderAvatarSelection();
+  } catch (e) {
+    console.error(e);
+    // Fallback
+    profileNameInput.value = localStorage.getItem("name") || "";
   }
 });
 
+closeProfileBtn.addEventListener("click", () => profileModal.classList.add("hidden"));
+cancelProfileBtn.addEventListener("click", () => profileModal.classList.add("hidden"));
+
+saveProfileBtn.addEventListener("click", async () => {
+  const name = profileNameInput.value.trim();
+  const bio = profileBioInput.value.trim();
+
+  if (!name) {
+    alert("Name is required");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": getToken()
+      },
+      body: JSON.stringify({ name, bio, avatar: currentAvatar })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    // Update local storage
+    localStorage.setItem("name", data.user.name);
+
+    alert("Profile updated!");
+    profileModal.classList.add("hidden");
+
+  } catch (e) {
+    console.error(e);
+    alert("Server error updating profile");
+  }
+});
+
+
+// Tab Switching Logic
+const settlementTab = document.getElementById("settlementTab");
+const chatTab = document.getElementById("chatTab");
+const settlementView = document.getElementById("settlementView");
+const chatView = document.getElementById("chatView");
+
+if (settlementTab && chatTab && settlementView && chatView) {
+  settlementTab.addEventListener("click", () => {
+    settlementTab.classList.add("active");
+    chatTab.classList.remove("active");
+    settlementView.classList.remove("hidden");
+    chatView.classList.add("hidden");
+  });
+
+  chatTab.addEventListener("click", () => {
+    chatTab.classList.add("active");
+    settlementTab.classList.remove("active");
+    chatView.classList.remove("hidden");
+    settlementView.classList.add("hidden");
+  });
+}
 
 // Initialization
 (function init() {

@@ -109,11 +109,6 @@
             <div style="flex:1;">
               <h3>Members</h3>
               <div id="memberListArea"></div>
-
-              <h3 style="margin-top:1.5rem;">Balances</h3>
-              <div id="balancesArea" class="small">
-                <p>Loading...</p>
-              </div>
             </div>
             <div style="flex:1.5;">
               <h3>Expenses</h3>
@@ -123,11 +118,28 @@
         </div>
       </div>
 
-      <!-- Right: Activity Placeholder -->
+      <!-- Right: Settlement Plan & Chat with Tabs -->
       <div class="column">
-        <h3>Activity</h3>
-        <div id="activityList">
-          <p class="small">Detailed recent activity will appear here.</p>
+        <div class="tab-header">
+          <button class="tab-btn active" id="settlementTab">Settlement Plan</button>
+          <button class="tab-btn" id="chatTab">Chat</button>
+        </div>
+
+        <div id="settlementView" class="tab-content">
+          <div id="settlementPlanArea">
+            <p class="small">Select a group to see settlement plan</p>
+          </div>
+        </div>
+
+        <div id="chatView" class="tab-content hidden">
+          <div id="chatMessages"
+            style="max-height: 400px; overflow-y: auto; margin-bottom: 10px; padding: 10px; background: #1e2530; border-radius: 8px;">
+            <p class="small">Group chat coming soon...</p>
+          </div>
+          <div class="row">
+            <input type="text" id="chatInput" placeholder="Type a message..." style="margin: 0;">
+            <button id="sendChatBtn" class="small">Send</button>
+          </div>
         </div>
       </div>
     </div>
@@ -194,12 +206,21 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Edit Profile</h3>
+        <button class="icon-button" id="closeProfileBtn" style="font-size:1.5rem; line-height:1;">×</button>
       </div>
       <div>
+        <div style="text-align:center; margin-bottom:1rem;">
+          <div id="currentAvatarDisplay" style="font-size:3rem;">😊</div>
+          <p class="small">Tap below to change</p>
+          <div class="row" style="justify-content:center; gap:0.5rem; margin-top:0.5rem;" id="avatarGrid">
+            <!-- Avatars injected by JS -->
+          </div>
+        </div>
+
         <label>Full Name</label>
         <input type="text" id="profileName" placeholder="Your Name" />
-        <label>Bio / Status</label>
-        <input type="text" id="profileBio" placeholder="Available..." />
+        <label>Bio</label>
+        <input type="text" id="profileBio" placeholder="Short bio..." />
         <p id="profileError" style="color:#fecaca;margin-top:0.4rem;font-size:0.8rem;"></p>
       </div>
       <div class="modal-footer">
