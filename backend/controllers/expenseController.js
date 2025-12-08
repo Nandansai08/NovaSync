@@ -4,37 +4,73 @@ const settlementService = require('../services/settlementService');
 
 exports.addExpense = async (req, res) => {
     try {
-        const { description, amount, groupId } = req.body;
+        const { description, amount, groupId, splitType, splits: providedSplits } = req.body;
         const userId = req.user.id; // Payer
 
         if (!description || !amount || !groupId) {
             return res.status(400).json({ error: "Missing fields" });
         }
 
-        // Default strategy: Split equally among ALL group members
-        // 1. Get all members
+        // Validate amount is positive
+        const expenseAmount = Number(amount);
+        if (expenseAmount <= 0) {
+            return res.status(400).json({ error: "Amount must be greater than zero" });
+        }
+
+        // Get all members
         const members = await GroupMember.find({ groupId });
         if (!members.length) {
             console.log("AddExpense: No members found for group", groupId);
             return res.status(400).json({ error: "Group has no members" });
         }
 
-        // Round to 2 decimals to avoid floating point issues
-        const splitAmount = Number((Number(amount) / members.length).toFixed(2));
+        let splits;
+        const expenseSplitType = splitType || 'EQUAL';
 
-        // 2. Create splits array
-        const splits = members.map(m => ({
-            userId: m.userId,
-            amount: splitAmount // Each person's share
-        }));
+        if (expenseSplitType === 'EXACT') {
+            // Validate exact splits
+            if (!providedSplits || !Array.isArray(providedSplits) || providedSplits.length === 0) {
+                return res.status(400).json({ error: "Splits required for EXACT type" });
+            }
 
-        // 3. Create Expense
+            // Validate all split amounts are positive
+            const hasNegative = providedSplits.some(s => Number(s.amount) <= 0);
+            if (hasNegative) {
+                return res.status(400).json({ error: "All split amounts must be greater than zero" });
+            }
+
+            // Validate sum equals total (with small tolerance for floating point)
+            const sum = providedSplits.reduce((acc, s) => acc + Number(s.amount), 0);
+            const totalAmount = Number(amount);
+
+            if (Math.abs(sum - totalAmount) > 0.01) {
+                return res.status(400).json({
+                    error: `Split amounts (₹${sum.toFixed(2)}) must equal total (₹${totalAmount.toFixed(2)})`
+                });
+            }
+
+            // Use provided splits
+            splits = providedSplits.map(s => ({
+                userId: s.userId,
+                amount: Number(s.amount)
+            }));
+
+        } else {
+            // EQUAL split - divide equally among all members
+            const splitAmount = Number((Number(amount) / members.length).toFixed(2));
+            splits = members.map(m => ({
+                userId: m.userId,
+                amount: splitAmount
+            }));
+        }
+
+        // Create Expense
         const expense = await Expense.create({
             description,
             amount: Number(amount),
             paidBy: userId,
             groupId,
-            splitType: 'EQUAL',
+            splitType: expenseSplitType,
             splits,
             date: new Date()
         });

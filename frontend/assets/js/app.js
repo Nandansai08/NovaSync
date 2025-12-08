@@ -360,28 +360,66 @@ async function loadGroupBalances(groupId) {
       return;
     }
 
-    // Display settlement plan
+    // Calculate user's totals
+    const currentUsername = localStorage.getItem("name") || "You";
+    let totalYouOwe = 0;
+    let totalYouAreOwed = 0;
+
+    if (data.plan && data.plan.length > 0) {
+      data.plan.forEach(p => {
+        if (p.from === currentUsername) {
+          totalYouOwe += parseFloat(p.amount);
+        }
+        if (p.to === currentUsername) {
+          totalYouAreOwed += parseFloat(p.amount);
+        }
+      });
+    }
+
+    // Display settlement plan with summary
     if (settlementPlanArea) {
+      let html = "";
+
+      // Summary Cards
+      html += `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+          <div style="background: #1a1f2e; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 5px;">You Owe</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: #ef4444;">₹${totalYouOwe.toFixed(2)}</div>
+          </div>
+          <div style="background: #1a1f2e; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 5px;">You Are Owed</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">₹${totalYouAreOwed.toFixed(2)}</div>
+          </div>
+        </div>
+      `;
+
+      // Settlement Plan
       if (!data.plan || data.plan.length === 0) {
-        settlementPlanArea.innerHTML = "<p style='text-align:center; padding: 20px;'>All settled up! ✅</p>";
+        html += "<p style='text-align:center; padding: 20px;'>All settled up! ✅</p>";
       } else {
-        let planHTML = "";
+        html += "<h4 style='margin-bottom: 10px; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase;'>Settlement Plan</h4>";
         data.plan.forEach(p => {
-          planHTML += `
-            <div style="margin-bottom: 0.75rem; padding: 12px; background: #1e2530; border-radius: 8px; border-left: 4px solid #38bdf8;">
+          const isYouPaying = p.from === currentUsername;
+          const isYouReceiving = p.to === currentUsername;
+          const highlightColor = isYouPaying ? "#ef4444" : isYouReceiving ? "#10b981" : "#38bdf8";
+
+          html += `
+            <div style="margin-bottom: 0.75rem; padding: 12px; background: #1e2530; border-radius: 8px; border-left: 4px solid ${highlightColor};">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                  <strong style="color: #f0f0f0;">${p.from}</strong> 
+                  <strong style="color: ${isYouPaying ? '#ef4444' : '#f0f0f0'};">${p.from}</strong> 
                   <span style="color: #94a3b8;">→</span> 
-                  <strong style="color: #f0f0f0;">${p.to}</strong>
+                  <strong style="color: ${isYouReceiving ? '#10b981' : '#f0f0f0'};">${p.to}</strong>
                 </div>
-                <span style="color: #38bdf8; font-weight: 700; font-size: 1.1rem;">₹${p.amount.toFixed(2)}</span>
+                <span style="color: ${highlightColor}; font-weight: 700; font-size: 1.1rem;">₹${p.amount.toFixed(2)}</span>
               </div>
             </div>
           `;
         });
-        settlementPlanArea.innerHTML = planHTML;
       }
+
+      settlementPlanArea.innerHTML = html;
     }
 
   } catch (e) {
@@ -564,24 +602,120 @@ function renderGroupDetailView(group, members) {
 
 // --- UI Navigation & Layout ---
 
+// Exact Splits Functions
+let currentGroupMembers = [];
+
+function renderExactSplitsUI(members) {
+  currentGroupMembers = members;
+  const exactSplitsList = document.getElementById('exactSplitsList');
+  const totalAmount = parseFloat(document.getElementById('expenseAmount').value) || 0;
+
+  exactSplitsList.innerHTML = '';
+
+  members.forEach(member => {
+    const div = document.createElement('div');
+    div.className = 'row';
+    div.style.marginBottom = '0.5rem';
+    div.style.alignItems = 'center';
+
+    const suggestedAmount = (totalAmount / members.length).toFixed(2);
+
+    div.innerHTML = `
+      <label style="flex: 1; margin: 0;">${member.name}</label>
+      <input type="number" 
+             class="exact-split-input" 
+             data-user-id="${member.id}" 
+             placeholder="0.00" 
+             value="0"
+             step="0.01" 
+             style="flex: 0.6; margin: 0;" />
+    `;
+    exactSplitsList.appendChild(div);
+  });
+
+  // Add event listeners for validation
+  document.querySelectorAll('.exact-split-input').forEach(input => {
+    input.addEventListener('input', validateExactSplits);
+  });
+
+  validateExactSplits();
+}
+
+function validateExactSplits() {
+  const totalAmount = parseFloat(document.getElementById('expenseAmount').value) || 0;
+  const inputs = document.querySelectorAll('.exact-split-input');
+  const validationDiv = document.getElementById('exactSplitValidation');
+
+  let sum = 0;
+  inputs.forEach(input => {
+    sum += parseFloat(input.value) || 0;
+  });
+
+  const difference = Math.abs(sum - totalAmount);
+
+  if (difference < 0.01) {
+    validationDiv.innerHTML = `<span style="color: #10b981;">✓ Sum matches total: ₹${sum.toFixed(2)}</span>`;
+    return true;
+  } else {
+    validationDiv.innerHTML = `<span style="color: #ef4444;">⚠ Sum: ₹${sum.toFixed(2)} | Total: ₹${totalAmount.toFixed(2)} | Difference: ₹${difference.toFixed(2)}</span>`;
+    return false;
+  }
+}
+
+function collectExactSplits() {
+  const inputs = document.querySelectorAll('.exact-split-input');
+  const splits = [];
+
+  inputs.forEach(input => {
+    splits.push({
+      userId: input.dataset.userId,
+      amount: parseFloat(input.value) || 0
+    });
+  });
+
+  return splits;
+}
+
+// Create Expense
 // Create Expense
 async function createExpense() {
   const description = expenseDescInput.value.trim();
   const amount = expenseAmountInput.value.trim();
+  const splitType = document.getElementById('expenseSplitType').value;
 
   if (!description || !amount) {
     addExpenseError.textContent = "Required fields missing.";
     return;
   }
 
+  if (parseFloat(amount) <= 0) {
+    addExpenseError.textContent = "Amount must be positive.";
+    return;
+  }
+
+  // Validate exact splits if needed
+  let splits = null;
+  if (splitType === 'EXACT') {
+    if (!validateExactSplits()) {
+      addExpenseError.textContent = "Split amounts must equal total amount.";
+      return;
+    }
+    splits = collectExactSplits();
+  }
+
   try {
+    const requestBody = { description, amount, groupId: currentGroupId, splitType };
+    if (splits) {
+      requestBody.splits = splits;
+    }
+
     const res = await fetch(`${API_BASE}/expenses/add`, {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
         "Authorization": getToken()
       },
-      body: JSON.stringify({ description, amount, groupId: currentGroupId })
+      body: JSON.stringify(requestBody)
     });
     const data = await res.json();
     if (data.error) {
@@ -593,8 +727,11 @@ async function createExpense() {
     addExpenseModal.classList.add("hidden");
     expenseDescInput.value = "";
     expenseAmountInput.value = "";
+    document.getElementById('expenseSplitType').value = 'EQUAL';
+    document.getElementById('exactSplitsContainer').classList.add('hidden');
     addExpenseError.textContent = "";
     loadGroupExpenses(currentGroupId);
+    loadGroupBalances(currentGroupId);
 
   } catch (e) {
     console.error(e);
@@ -827,14 +964,49 @@ cancelAddMemberBtn.addEventListener("click", () => {
 confirmAddMemberBtn.addEventListener("click", addMemberToGroup);
 
 // Add Expense Modal
-openAddExpenseBtn.addEventListener("click", () => {
+openAddExpenseBtn.addEventListener("click", async () => {
   addExpenseModal.classList.remove("hidden");
+
+  // Load current group members for exact splits
+  if (currentGroupId) {
+    try {
+      const res = await fetch(`${API_BASE}/groups/${currentGroupId}`, {
+        headers: { "Authorization": getToken() }
+      });
+      const data = await res.json();
+      if (data.members) {
+        currentGroupMembers = data.members;
+      }
+    } catch (e) {
+      console.error("Error loading members:", e);
+    }
+  }
 });
 cancelAddExpenseBtn.addEventListener("click", () => {
   addExpenseModal.classList.add("hidden");
   addExpenseError.textContent = "";
+  document.getElementById('exactSplitsContainer').classList.add('hidden');
 });
 confirmAddExpenseBtn.addEventListener("click", createExpense);
+
+// Split Type Change
+document.getElementById('expenseSplitType').addEventListener('change', (e) => {
+  const exactContainer = document.getElementById('exactSplitsContainer');
+  if (e.target.value === 'EXACT') {
+    exactContainer.classList.remove('hidden');
+    renderExactSplitsUI(currentGroupMembers);
+  } else {
+    exactContainer.classList.add('hidden');
+  }
+});
+
+// Amount Change - Update exact splits if shown
+document.getElementById('expenseAmount').addEventListener('input', () => {
+  const splitType = document.getElementById('expenseSplitType').value;
+  if (splitType === 'EXACT' && currentGroupMembers.length > 0) {
+    renderExactSplitsUI(currentGroupMembers);
+  }
+});
 
 // Expense Detail
 closeDetailBtn.addEventListener("click", () => {
