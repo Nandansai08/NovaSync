@@ -8,7 +8,7 @@ const expenseSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now },
     splitType: {
         type: String,
-        enum: ['EQUAL', 'EXACT'],
+        enum: ['EQUAL', 'EXACT', 'PERCENT'],
         default: 'EQUAL'
     },
     // We can store the detailed split info

@@ -674,6 +674,92 @@ function collectExactSplits() {
   });
 
   return splits;
+  return splits;
+}
+
+// Percent Splits Functions
+function renderPercentSplitsUI(members) {
+  currentGroupMembers = members;
+  const percentSplitsList = document.getElementById('percentSplitsList');
+  const totalAmount = parseFloat(document.getElementById('expenseAmount').value) || 0;
+
+  percentSplitsList.innerHTML = '';
+
+  members.forEach(member => {
+    const div = document.createElement('div');
+    div.className = 'row';
+    div.style.marginBottom = '0.5rem';
+    div.style.alignItems = 'center';
+
+    div.innerHTML = `
+      <label style="flex: 1; margin: 0;">${member.name}</label>
+      <div style="flex: 1.2; display: flex; align-items: center; gap: 0.5rem;">
+        <input type="number" 
+               class="percent-split-input" 
+               data-user-id="${member.id}" 
+               placeholder="0" 
+               value="0"
+               step="0.01" 
+               max="100"
+               style="width: 70px; margin: 0;" />
+        <span style="font-size: 0.8rem; opacity: 0.7;">%</span>
+        <span class="calc-amount" style="font-size: 0.8rem; margin-left: auto;">₹0.00</span>
+      </div>
+    `;
+    percentSplitsList.appendChild(div);
+  });
+
+  // Add event listeners for validation and calc
+  document.querySelectorAll('.percent-split-input').forEach(input => {
+    input.addEventListener('input', () => {
+      updatePercentCalculations(totalAmount);
+      validatePercentSplits();
+    });
+  });
+
+  validatePercentSplits();
+}
+
+function updatePercentCalculations(totalAmount) {
+  document.querySelectorAll('.percent-split-input').forEach(input => {
+    const percent = parseFloat(input.value) || 0;
+    const amount = (percent / 100) * totalAmount;
+    input.parentElement.querySelector('.calc-amount').textContent = `₹${amount.toFixed(2)}`;
+  });
+}
+
+function validatePercentSplits() {
+  const inputs = document.querySelectorAll('.percent-split-input');
+  const validationDiv = document.getElementById('percentSplitValidation');
+
+  let sum = 0;
+  inputs.forEach(input => {
+    sum += parseFloat(input.value) || 0;
+  });
+
+  const difference = Math.abs(sum - 100);
+
+  if (difference < 0.01) {
+    validationDiv.innerHTML = `<span style="color: #10b981;">✓ Total: ${sum.toFixed(2)}%</span>`;
+    return true;
+  } else {
+    validationDiv.innerHTML = `<span style="color: #ef4444;">⚠ Total: ${sum.toFixed(2)}% (Target: 100%)</span>`;
+    return false;
+  }
+}
+
+function collectPercentSplits() {
+  const inputs = document.querySelectorAll('.percent-split-input');
+  const splits = [];
+
+  inputs.forEach(input => {
+    splits.push({
+      userId: input.dataset.userId,
+      percentage: parseFloat(input.value) || 0
+    });
+  });
+
+  return splits;
 }
 
 // Create Expense
@@ -693,7 +779,7 @@ async function createExpense() {
     return;
   }
 
-  // Validate exact splits if needed
+  // Validate exact/percent splits if needed
   let splits = null;
   if (splitType === 'EXACT') {
     if (!validateExactSplits()) {
@@ -701,6 +787,12 @@ async function createExpense() {
       return;
     }
     splits = collectExactSplits();
+  } else if (splitType === 'PERCENT') {
+    if (!validatePercentSplits()) {
+      addExpenseError.textContent = "Percentages must sum to 100%.";
+      return;
+    }
+    splits = collectPercentSplits();
   }
 
   try {
@@ -729,6 +821,7 @@ async function createExpense() {
     expenseAmountInput.value = "";
     document.getElementById('expenseSplitType').value = 'EQUAL';
     document.getElementById('exactSplitsContainer').classList.add('hidden');
+    document.getElementById('percentSplitsContainer').classList.add('hidden');
     addExpenseError.textContent = "";
     loadGroupExpenses(currentGroupId);
     loadGroupBalances(currentGroupId);
@@ -992,19 +1085,31 @@ confirmAddExpenseBtn.addEventListener("click", createExpense);
 // Split Type Change
 document.getElementById('expenseSplitType').addEventListener('change', (e) => {
   const exactContainer = document.getElementById('exactSplitsContainer');
+  const percentContainer = document.getElementById('percentSplitsContainer');
+
+  // Hide all first
+  exactContainer.classList.add('hidden');
+  percentContainer.classList.add('hidden');
+
   if (e.target.value === 'EXACT') {
     exactContainer.classList.remove('hidden');
     renderExactSplitsUI(currentGroupMembers);
-  } else {
-    exactContainer.classList.add('hidden');
+  } else if (e.target.value === 'PERCENT') {
+    percentContainer.classList.remove('hidden');
+    renderPercentSplitsUI(currentGroupMembers);
   }
 });
 
 // Amount Change - Update exact splits if shown
 document.getElementById('expenseAmount').addEventListener('input', () => {
   const splitType = document.getElementById('expenseSplitType').value;
+  const totalAmount = parseFloat(document.getElementById('expenseAmount').value) || 0;
+
   if (splitType === 'EXACT' && currentGroupMembers.length > 0) {
-    renderExactSplitsUI(currentGroupMembers);
+    // If we want exact values to scale, we'd do it here, but they are manual.
+    // However, percent calculations DO depend on amount.
+  } else if (splitType === 'PERCENT' && currentGroupMembers.length > 0) {
+    updatePercentCalculations(totalAmount);
   }
 });
 

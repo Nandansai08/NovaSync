@@ -196,6 +196,7 @@
         <select id="expenseSplitType">
           <option value="EQUAL">Equal - Split equally among all members</option>
           <option value="EXACT">Exact - Specify exact amounts per person</option>
+          <option value="PERCENT">Percent - Specify percentage per person</option>
         </select>
 
         <!-- Exact Splits Container -->
@@ -203,6 +204,13 @@
           <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">Specify amounts for each member:</h4>
           <div id="exactSplitsList"></div>
           <div id="exactSplitValidation" class="small" style="margin-top: 0.5rem;"></div>
+        </div>
+
+        <!-- Percent Splits Container -->
+        <div id="percentSplitsContainer" class="hidden" style="margin-top: 1rem;">
+          <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">Specify percentage for each member:</h4>
+          <div id="percentSplitsList"></div>
+          <div id="percentSplitValidation" class="small" style="margin-top: 0.5rem;"></div>
         </div>
 
         <p id="addExpenseError" style="color:#fecaca;margin-top:0.4rem;font-size:0.8rem;"></p>

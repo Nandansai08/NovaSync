@@ -55,6 +55,44 @@ exports.addExpense = async (req, res) => {
                 amount: Number(s.amount)
             }));
 
+        } else if (expenseSplitType === 'PERCENT') {
+            // Validate percent splits
+            if (!providedSplits || !Array.isArray(providedSplits) || providedSplits.length === 0) {
+                return res.status(400).json({ error: "Splits required for PERCENT type" });
+            }
+
+            // Validate sum equals 100%
+            const sum = providedSplits.reduce((acc, s) => acc + Number(s.percentage), 0);
+            if (Math.abs(sum - 100) > 0.01) {
+                return res.status(400).json({
+                    error: `Percentages must sum to 100% (Current: ${sum}%)`
+                });
+            }
+
+            splits = [];
+            let totalCalculated = 0;
+            const totalAmount = Number(amount);
+
+            // Calculate amounts
+            for (let i = 0; i < providedSplits.length; i++) {
+                const s = providedSplits[i];
+                // Calculate share: (percent / 100) * total
+                let share = Number(((Number(s.percentage) / 100) * totalAmount).toFixed(2));
+
+                splits.push({
+                    userId: s.userId,
+                    amount: share
+                });
+                totalCalculated += share;
+            }
+
+            // Fix rounding difference
+            let diff = Number((totalAmount - totalCalculated).toFixed(2));
+            if (diff !== 0) {
+                // Add difference to first user (simplest approach for small pennies)
+                splits[0].amount = Number((splits[0].amount + diff).toFixed(2));
+            }
+
         } else {
             // EQUAL split - divide equally among all members
             const splitAmount = Number((Number(amount) / members.length).toFixed(2));
