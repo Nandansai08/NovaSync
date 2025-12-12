@@ -123,6 +123,7 @@
         <div class="tab-header">
           <button class="tab-btn active" id="settlementTab">Settlement Plan</button>
           <button class="tab-btn" id="chatTab">Chat</button>
+          <button class="tab-btn" id="activityTab">Activity</button>
         </div>
 
         <div id="settlementView" class="tab-content">
@@ -139,6 +140,13 @@
           <div class="row">
             <input type="text" id="chatInput" placeholder="Type a message..." style="margin: 0;">
             <button id="sendChatBtn" class="small">Send</button>
+          </div>
+        </div>
+
+        <!-- Activity Feed View -->
+        <div id="activityView" class="tab-content hidden">
+          <div id="activityFeedList" style="max-height: 500px; overflow-y: auto;">
+            <p class="small">Loading activity...</p>
           </div>
         </div>
       </div>

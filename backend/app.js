@@ -5,6 +5,8 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
+const activityRoutes = require('./routes/activityRoutes');
+const commentRoutes = require('./routes/commentRoutes');
 const app = express();
 
 app.use(cors());
@@ -18,5 +20,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/comments', commentRoutes);
 
 module.exports = app;

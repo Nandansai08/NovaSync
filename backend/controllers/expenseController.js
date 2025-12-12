@@ -1,5 +1,6 @@
 const Expense = require('../models/Expense');
 const GroupMember = require('../models/GroupMember');
+const Activity = require('../models/Activity');
 const settlementService = require('../services/settlementService');
 
 exports.addExpense = async (req, res) => {
@@ -113,6 +114,14 @@ exports.addExpense = async (req, res) => {
             date: new Date()
         });
 
+        // Log Activity
+        await Activity.create({
+            groupId,
+            userId: req.user.id,
+            type: 'EXPENSE_ADDED',
+            description: `${req.user.name} added '${description}' (₹${amount})`
+        });
+
         res.json(expense);
     } catch (err) {
         console.error("Add expense error:", err);
@@ -178,6 +187,15 @@ exports.deleteExpense = async (req, res) => {
         }
 
         await Expense.findByIdAndDelete(expenseId);
+
+        // Log Activity
+        await Activity.create({
+            groupId: expense.groupId,
+            userId: req.user.id,
+            type: 'EXPENSE_DELETED',
+            description: `${req.user.name} deleted '${expense.description}'`
+        });
+
         res.json({ message: "Expense deleted" });
 
     } catch (err) {

@@ -428,6 +428,68 @@ async function loadGroupBalances(groupId) {
   }
 }
 
+// Load Group Activity
+async function loadGroupActivity(groupId) {
+  const activityList = document.getElementById('activityFeedList');
+  activityList.innerHTML = "<p class='small'>Loading activity...</p>";
+
+  try {
+    const res = await fetch(`${API_BASE}/activity/${groupId}`, {
+      headers: { "Authorization": getToken() }
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      activityList.innerHTML = `<p class="error">${data.error}</p>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      activityList.innerHTML = "<p class='small'>No recent activity.</p>";
+      return;
+    }
+
+    renderActivityFeed(data);
+
+  } catch (e) {
+    console.error(e);
+    activityList.innerHTML = "<p class='small error'>Error loading activity.</p>";
+  }
+}
+
+function renderActivityFeed(activities) {
+  const activityList = document.getElementById('activityFeedList');
+  activityList.innerHTML = "";
+
+  activities.forEach(act => {
+    const div = document.createElement('div');
+    div.className = 'activity-item';
+    div.style.padding = '10px';
+    div.style.marginBottom = '8px';
+    div.style.backgroundColor = '#1e2530';
+    div.style.borderRadius = '8px';
+    div.style.borderLeft = '3px solid #3b82f6';
+
+    const date = new Date(act.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    // Icon based on type
+    let icon = '📝';
+    if (act.type === 'EXPENSE_ADDED') icon = '💸';
+    if (act.type === 'EXPENSE_DELETED') icon = '🗑️';
+    if (act.type === 'MEMBER_ADDED') icon = '👤';
+    if (act.type === 'GROUP_CREATED') icon = '✨';
+
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <span style="font-size:0.85rem; color:#94a3b8;">${date}</span>
+        <span style="font-size:1.2rem;">${icon}</span>
+      </div>
+      <div style="font-size:0.95rem; line-height:1.4;">${act.description}</div>
+    `;
+    activityList.appendChild(div);
+  });
+}
+
 // Load and Render Expenses
 async function loadGroupExpenses(groupId) {
   expenseListArea.innerHTML = "<p>Loading expenses...</p>";
@@ -514,6 +576,11 @@ async function deleteExpense() {
     expenseDetailModal.classList.add("hidden");
     loadGroupExpenses(currentGroupId);
     loadGroupBalances(currentGroupId);
+    // Refresh activity if valid
+    const actTab = document.getElementById('activityTab');
+    if (actTab && actTab.classList.contains('active')) {
+      loadGroupActivity(currentGroupId);
+    }
   } catch (e) {
     console.error(e);
     alert("Error deleting expense");
@@ -562,6 +629,11 @@ function renderGroupDetailView(group, members) {
       if (d.error) alert(d.error);
       else {
         loadGroupDetail(groupId);
+        // Refresh activity if valid
+        const actTab = document.getElementById('activityTab');
+        if (actTab && actTab.classList.contains('active')) {
+          loadGroupActivity(groupId);
+        }
       }
     } catch (e) { console.error(e); }
   };
@@ -825,6 +897,11 @@ async function createExpense() {
     addExpenseError.textContent = "";
     loadGroupExpenses(currentGroupId);
     loadGroupBalances(currentGroupId);
+    // Refresh activity if valid
+    const actTab = document.getElementById('activityTab');
+    if (actTab && actTab.classList.contains('active')) {
+      loadGroupActivity(currentGroupId);
+    }
 
   } catch (e) {
     console.error(e);
@@ -1218,26 +1295,48 @@ saveProfileBtn.addEventListener("click", async () => {
 
 
 // Tab Switching Logic
+// Tab Switching Logic
 const settlementTab = document.getElementById("settlementTab");
 const chatTab = document.getElementById("chatTab");
+const activityTab = document.getElementById("activityTab");
+
 const settlementView = document.getElementById("settlementView");
 const chatView = document.getElementById("chatView");
+const activityView = document.getElementById("activityView");
 
-if (settlementTab && chatTab && settlementView && chatView) {
+// Helper to hide all views and reset tabs
+function resetTabs() {
+  [settlementTab, chatTab, activityTab].forEach(t => t && t.classList.remove("active"));
+  [settlementView, chatView, activityView].forEach(v => v && v.classList.add("hidden"));
+}
+
+if (settlementTab && settlementView) {
   settlementTab.addEventListener("click", () => {
+    resetTabs();
     settlementTab.classList.add("active");
-    chatTab.classList.remove("active");
     settlementView.classList.remove("hidden");
-    chatView.classList.add("hidden");
-  });
-
-  chatTab.addEventListener("click", () => {
-    chatTab.classList.add("active");
-    settlementTab.classList.remove("active");
-    chatView.classList.remove("hidden");
-    settlementView.classList.add("hidden");
+    if (currentGroupId) loadGroupBalances(currentGroupId);
   });
 }
+
+if (chatTab && chatView) {
+  chatTab.addEventListener("click", () => {
+    resetTabs();
+    chatTab.classList.add("active");
+    chatView.classList.remove("hidden");
+  });
+}
+
+if (activityTab && activityView) {
+  activityTab.addEventListener("click", () => {
+    resetTabs();
+    activityTab.classList.add("active");
+    activityView.classList.remove("hidden");
+    if (currentGroupId) loadGroupActivity(currentGroupId);
+  });
+}
+
+
 
 // Initialization
 (function init() {

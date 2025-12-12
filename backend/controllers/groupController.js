@@ -1,6 +1,7 @@
 const Group = require('../models/Group');
 const GroupMember = require('../models/GroupMember');
 const User = require('../models/User');
+const Activity = require('../models/Activity');
 
 exports.addMember = async (req, res) => {
   try {
@@ -19,6 +20,15 @@ exports.addMember = async (req, res) => {
     }
 
     await GroupMember.create({ groupId, userId: user._id });
+
+    // Log Activity
+    await Activity.create({
+      groupId,
+      userId: req.user.id, // Who added the member
+      type: 'MEMBER_ADDED',
+      description: `${req.user.name} added ${user.name}`
+    });
+
     res.json({ message: "Member added", user: { id: user._id, name: user.name, username: user.username } });
   } catch (e) {
     console.error(e);
@@ -45,6 +55,14 @@ exports.createGroup = async (req, res) => {
     });
 
     res.json({ message: "Group created", group });
+
+    // Log Activity
+    await Activity.create({
+      groupId: group._id,
+      userId: req.user.id,
+      type: 'GROUP_CREATED',
+      description: `${req.user.name} created the group "${name}"`
+    });
   } catch (e) {
     console.error("Error creating group:", e);
     res.json({ error: e.message || "Server error" });
