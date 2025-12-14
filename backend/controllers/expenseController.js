@@ -136,7 +136,8 @@ exports.getGroupExpenses = async (req, res) => {
         // Sort by date desc
         const expenses = await Expense.find({ groupId })
             .sort({ date: -1 })
-            .populate('paidBy', 'name username');
+            .populate('paidBy', 'name username')
+            .populate('splits.userId', 'name username');
 
         res.json(expenses);
     } catch (err) {

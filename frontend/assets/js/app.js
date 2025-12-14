@@ -230,6 +230,7 @@ async function loginUser() {
     // Store user info
     localStorage.setItem("username", data.username);
     if (data.name) localStorage.setItem("name", data.name);
+    if (data.userId) localStorage.setItem("userId", data.userId);
 
     updateAppVisibility();
     authError.textContent = "";
@@ -428,6 +429,143 @@ async function loadGroupBalances(groupId) {
   }
 }
 
+// --- Chat Logic ---
+let chatInterval = null;
+
+async function loadGroupChat(groupId) {
+  const chatMessages = document.getElementById('chatMessages');
+  // Only show loading if empty
+  if (chatMessages.innerHTML.includes("Loading chat...") || chatMessages.children.length === 0) {
+    chatMessages.innerHTML = "<p class='small' style='text-align:center; color:#64748b;'>Loading...</p>";
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/comments/${groupId}`, {
+      headers: { "Authorization": getToken() }
+    });
+    const comments = await res.json();
+
+    if (comments.error) {
+      chatMessages.innerHTML = `<p class="error">${comments.error}</p>`;
+      return;
+    }
+
+    renderChatMessages(comments);
+
+  } catch (e) {
+    console.error(e);
+    // Don't overwrite if transient error during polling
+    if (chatMessages.innerHTML.includes("Loading...")) {
+      chatMessages.innerHTML = "<p class='small error'>Error loading chat.</p>";
+    }
+  }
+}
+
+function renderChatMessages(comments) {
+  const chatMessages = document.getElementById('chatMessages');
+  const userId = localStorage.getItem("userId");
+
+  // If list is empty/loading, clear it
+  if (chatMessages.innerHTML.includes("Loading") || chatMessages.innerHTML.includes("Group chat coming soon")) {
+    chatMessages.innerHTML = "";
+  }
+
+  // Basic optimization: clear and rebuild (simpler than diffing for now)
+  // For scrolling: check if already at bottom
+  const isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop === chatMessages.clientHeight;
+
+  chatMessages.innerHTML = "";
+
+  if (comments.length === 0) {
+    chatMessages.innerHTML = "<p class='small' style='text-align: center; color: #64748b;'>No messages yet. Say hi! 👋</p>";
+    return;
+  }
+
+  comments.forEach(c => {
+    const isMe = c.userId._id === userId;
+    const div = document.createElement('div');
+
+    // Style bubble
+    div.style.maxWidth = "80%";
+    div.style.padding = "8px 12px";
+    div.style.borderRadius = "12px";
+    div.style.fontSize = "0.95rem";
+    div.style.marginBottom = "4px";
+    div.style.position = "relative";
+    div.style.lineHeight = "1.4";
+
+    if (isMe) {
+      div.style.alignSelf = "flex-end";
+      div.style.backgroundColor = "#3b82f6"; // Blue
+      div.style.color = "white";
+      div.style.borderBottomRightRadius = "2px";
+    } else {
+      div.style.alignSelf = "flex-start";
+      div.style.backgroundColor = "#334155"; // Gray
+      div.style.color = "#f1f5f9";
+      div.style.borderBottomLeftRadius = "2px";
+    }
+
+    const time = new Date(c.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const sender = isMe ? "" : `<div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 2px;">${c.userId.name}</div>`;
+
+    div.innerHTML = `
+      ${sender}
+      <div>${c.text}</div>
+      <div style="font-size: 0.7rem; opacity: 0.7; text-align: right; margin-top: 4px;">${time}</div>
+    `;
+
+    chatMessages.appendChild(div);
+  });
+
+  // Auto-scroll to bottom
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Start/Stop Polling
+function startChatPolling(groupId) {
+  if (chatInterval) clearInterval(chatInterval);
+  loadGroupChat(groupId); // Initial load
+  chatInterval = setInterval(() => loadGroupChat(groupId), 3000); // 3s
+}
+
+function stopChatPolling() {
+  if (chatInterval) clearInterval(chatInterval);
+  chatInterval = null;
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  // Optimistic clear
+  input.value = "";
+
+  try {
+    const res = await fetch(`${API_BASE}/comments/add`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": getToken()
+      },
+      body: JSON.stringify({ groupId: currentGroupId, text })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+    } else {
+      loadGroupChat(currentGroupId); // Refresh immediately
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Error sending message");
+  }
+}
+
+
 // Load Group Activity
 async function loadGroupActivity(groupId) {
   const activityList = document.getElementById('activityFeedList');
@@ -604,16 +742,32 @@ function renderGroupDetailView(group, members) {
   memberListArea.innerHTML = "";
   members.forEach(m => {
     const row = document.createElement('div');
-    row.className = 'flex-space small';
-    row.style.marginTop = '0.15rem';
+    row.className = 'member-item';
+    row.style.marginTop = '0'; // reset style
+
+    // Avatar Initials
+    const initials = m.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+
+    // Admin Check
+    const isAdmin = String(group.createdBy) === m.id;
+
     row.innerHTML = `
-            <div>${m.name} (@${m.username})</div>
-            ${(typeof currentGroupId === 'undefined' || !group.createdBy) ? '' :
-        (group.createdBy === localStorage.getItem("userId") && m.id !== localStorage.getItem("userId")
-          ? `<button class="text-danger small" onclick="removeMember('${group._id}', '${m.id}')" style="padding:0;font-size:0.7rem;">Remove</button>`
+        <div class="member-avatar-placeholder">${initials}</div>
+        <div class="member-info">
+            <div class="member-name">
+                ${m.name} 
+                ${isAdmin ? '<span class="member-badge">Admin</span>' : ''}
+            </div>
+            <div class="member-username">@${m.username}</div>
+        </div>
+        ${(typeof currentGroupId === 'undefined' || !group.createdBy) ? '' :
+        (String(group.createdBy) === localStorage.getItem("userId") && m.id !== localStorage.getItem("userId")
+          ? `<button class="remove-member-btn" onclick="removeMember('${group._id}', '${m.id}')" title="Remove Member">
+                   <span style="font-size: 1.2rem; margin-right: 2px;">×</span> Remove
+                 </button>`
           : '')
       }
-        `;
+    `;
     memberListArea.appendChild(row);
   });
 
@@ -1313,6 +1467,7 @@ function resetTabs() {
 if (settlementTab && settlementView) {
   settlementTab.addEventListener("click", () => {
     resetTabs();
+    stopChatPolling(); // Stop polling
     settlementTab.classList.add("active");
     settlementView.classList.remove("hidden");
     if (currentGroupId) loadGroupBalances(currentGroupId);
@@ -1324,15 +1479,30 @@ if (chatTab && chatView) {
     resetTabs();
     chatTab.classList.add("active");
     chatView.classList.remove("hidden");
+    if (currentGroupId) startChatPolling(currentGroupId);
   });
 }
 
 if (activityTab && activityView) {
   activityTab.addEventListener("click", () => {
     resetTabs();
+    stopChatPolling(); // Stop polling
     activityTab.classList.add("active");
     activityView.classList.remove("hidden");
     if (currentGroupId) loadGroupActivity(currentGroupId);
+  });
+}
+
+// Global Chat Listeners
+const sendChatBtn = document.getElementById('sendChatBtn');
+const chatInput = document.getElementById('chatInput');
+
+if (sendChatBtn) {
+  sendChatBtn.addEventListener('click', sendChatMessage);
+}
+if (chatInput) {
+  chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendChatMessage();
   });
 }
 
