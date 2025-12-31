@@ -11,6 +11,11 @@ const expenseSchema = new mongoose.Schema({
         enum: ['EQUAL', 'EXACT', 'PERCENT'],
         default: 'EQUAL'
     },
+    category: {
+        type: String,
+        enum: ['Food', 'Travel', 'Bills', 'Entertainment', 'Shopping', 'Other'],
+        default: 'Other'
+    },
     // We can store the detailed split info
     splits: [{
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

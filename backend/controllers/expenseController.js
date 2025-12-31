@@ -5,7 +5,7 @@ const settlementService = require('../services/settlementService');
 
 exports.addExpense = async (req, res) => {
     try {
-        const { description, amount, groupId, splitType, splits: providedSplits } = req.body;
+        const { description, amount, groupId, category, splitType, splits: providedSplits } = req.body;
         const userId = req.user.id; // Payer
 
         if (!description || !amount || !groupId) {
@@ -109,6 +109,7 @@ exports.addExpense = async (req, res) => {
             amount: Number(amount),
             paidBy: userId,
             groupId,
+            category: category || 'Other',
             splitType: expenseSplitType,
             splits,
             date: new Date()
@@ -132,9 +133,36 @@ exports.addExpense = async (req, res) => {
 exports.getGroupExpenses = async (req, res) => {
     try {
         const { groupId } = req.params;
+        const { search, category, startDate, endDate } = req.query;
+
+        // Build Query
+        const query = { groupId };
+
+        // Search Filter (Description)
+        if (search) {
+            query.description = { $regex: search, $options: 'i' };
+        }
+
+        // Category Filter
+        if (category && category !== 'All') {
+            query.category = category;
+        }
+
+        // Date Filter
+        if (startDate || endDate) {
+            query.date = {};
+            if (startDate) query.date.$gte = new Date(startDate);
+            // End date needs to be end of that day effectively, or just simple check
+            // Usually valid to set $lte to end of day, but for simple date pickers:
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                query.date.$lte = end;
+            }
+        }
 
         // Sort by date desc
-        const expenses = await Expense.find({ groupId })
+        const expenses = await Expense.find(query)
             .sort({ date: -1 })
             .populate('paidBy', 'name username')
             .populate('splits.userId', 'name username');

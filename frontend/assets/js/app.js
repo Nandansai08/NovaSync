@@ -6,6 +6,15 @@ let currentGroupId = null;
 let pageMode = 'main'; // 'main' | 'createGroup' | 'allGroups' | 'invites'
 let viewMode = 'groups'; // 'groups' | 'chat'
 
+const CATEGORY_ICONS = {
+  'Food': '🍔',
+  'Travel': '✈️',
+  'Bills': '🧾',
+  'Entertainment': '🎬',
+  'Shopping': '🛍️',
+  'Other': '📦'
+};
+
 // --- DOM Elements ---
 
 // Auth
@@ -631,8 +640,18 @@ function renderActivityFeed(activities) {
 // Load and Render Expenses
 async function loadGroupExpenses(groupId) {
   expenseListArea.innerHTML = "<p>Loading expenses...</p>";
+
+  const search = document.getElementById('filterSearch') ? document.getElementById('filterSearch').value : '';
+  const category = document.getElementById('filterCategory') ? document.getElementById('filterCategory').value : '';
+  const startDate = document.getElementById('filterStartDate') ? document.getElementById('filterStartDate').value : '';
+  const endDate = document.getElementById('filterEndDate') ? document.getElementById('filterEndDate').value : '';
+
+  let query = `?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`;
+  if (startDate) query += `&startDate=${startDate}`;
+  if (endDate) query += `&endDate=${endDate}`;
+
   try {
-    const res = await fetch(`${API_BASE}/expenses/group/${groupId}`, {
+    const res = await fetch(`${API_BASE}/expenses/group/${groupId}${query}`, {
       headers: { "Authorization": getToken() }
     });
     const data = await res.json();
@@ -657,16 +676,22 @@ async function loadGroupExpenses(groupId) {
 function renderExpenses(expenses) {
   expenseListArea.innerHTML = "";
   expenses.forEach(ex => {
+    const icon = CATEGORY_ICONS[ex.category] || '📦';
     const div = document.createElement("div");
     div.className = "expense-card";
     div.style.cursor = "pointer";
     div.innerHTML = `
       <div class="flex-space">
-        <strong>${ex.description}</strong>
-        <span style="color:var(--brand-primary);">₹${parseFloat(ex.amount).toFixed(2)}</span>
-      </div>
-      <div class="small" style="opacity:0.7; margin-top:0.2rem;">
-        Paid by ${ex.paidBy ? ex.paidBy.name : 'Unknown'}
+        <div style="display:flex; align-items:center; gap:10px;">
+           <span style="font-size:1.5rem;">${icon}</span>
+           <div>
+               <strong style="display:block;">${ex.description}</strong>
+               <div class="small" style="opacity:0.7; font-size:0.75rem;">
+                 Paid by ${ex.paidBy ? ex.paidBy.name : 'Unknown'} • ${new Date(ex.date).toLocaleDateString()}
+               </div>
+           </div>
+        </div>
+        <span style="color:var(--brand-primary); font-weight:bold;">₹${parseFloat(ex.amount).toFixed(2)}</span>
       </div>
     `;
     div.addEventListener("click", () => showExpenseDetails(ex));
@@ -993,6 +1018,7 @@ function collectPercentSplits() {
 async function createExpense() {
   const description = expenseDescInput.value.trim();
   const amount = expenseAmountInput.value.trim();
+  const category = document.getElementById('expenseCategory').value;
   const splitType = document.getElementById('expenseSplitType').value;
 
   if (!description || !amount) {
@@ -1022,7 +1048,7 @@ async function createExpense() {
   }
 
   try {
-    const requestBody = { description, amount, groupId: currentGroupId, splitType };
+    const requestBody = { description, amount, groupId: currentGroupId, splitType, category };
     if (splits) {
       requestBody.splits = splits;
     }
@@ -1045,6 +1071,7 @@ async function createExpense() {
     addExpenseModal.classList.add("hidden");
     expenseDescInput.value = "";
     expenseAmountInput.value = "";
+    document.getElementById('expenseCategory').value = 'Other';
     document.getElementById('expenseSplitType').value = 'EQUAL';
     document.getElementById('exactSplitsContainer').classList.add('hidden');
     document.getElementById('percentSplitsContainer').classList.add('hidden');
@@ -1507,6 +1534,34 @@ if (chatInput) {
 }
 
 
+
+// --- Filters ---
+function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
+const applyFilters = debounce(() => {
+  if (currentGroupId) {
+    loadGroupExpenses(currentGroupId);
+  }
+}, 500);
+
+// If elements exist (they should), bind:
+const fSearch = document.getElementById('filterSearch');
+if (fSearch) fSearch.addEventListener('input', applyFilters);
+
+const fCat = document.getElementById('filterCategory');
+if (fCat) fCat.addEventListener('change', applyFilters);
+
+const fStart = document.getElementById('filterStartDate');
+if (fStart) fStart.addEventListener('change', applyFilters);
+
+const fEnd = document.getElementById('filterEndDate');
+if (fEnd) fEnd.addEventListener('change', applyFilters);
 
 // Initialization
 (function init() {
