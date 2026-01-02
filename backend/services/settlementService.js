@@ -40,6 +40,11 @@ exports.calculateBalances = (expenses, members) => {
     // Positive = Creditor (needs to be paid)
     // Negative = Debtor (needs to pay)
 
+    // Round balances to avoid micro-pennies due to floating point math
+    for (const uid in balances) {
+        balances[uid] = Math.round(balances[uid] * 100) / 100;
+    }
+
     let debtors = [];
     let creditors = [];
 

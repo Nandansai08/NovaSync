@@ -101,6 +101,15 @@ exports.addExpense = async (req, res) => {
                 userId: m.userId,
                 amount: splitAmount
             }));
+
+            // Fix rounding difference (e.g., 100 / 3 = 33.33 * 3 = 99.99 -> diff 0.01)
+            const totalCalculated = splits.reduce((sum, s) => sum + s.amount, 0);
+            let diff = Number((Number(amount) - totalCalculated).toFixed(2));
+
+            if (diff !== 0) {
+                // Add difference to the first member
+                splits[0].amount = Number((splits[0].amount + diff).toFixed(2));
+            }
         }
 
         // Create Expense
