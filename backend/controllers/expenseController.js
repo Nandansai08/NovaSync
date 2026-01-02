@@ -112,7 +112,8 @@ exports.addExpense = async (req, res) => {
             category: category || 'Other',
             splitType: expenseSplitType,
             splits,
-            date: new Date()
+            date: new Date(),
+            isRecurring: req.body.isRecurring || false
         });
 
         // Log Activity
@@ -130,9 +131,61 @@ exports.addExpense = async (req, res) => {
     }
 };
 
+// Helper: Process recurring expenses for a group
+async function processRecurringExpenses(groupId) {
+    try {
+        // Find recurring expenses that need to be generated
+        // Simple logic: If today > lastGenerated + 1 month
+        // We iterate and check manually to be safe with dates
+
+        const recurring = await Expense.find({ groupId, isRecurring: true });
+
+        const now = new Date();
+
+        for (const exp of recurring) {
+            let nextDue = new Date(exp.lastGenerated);
+            nextDue.setMonth(nextDue.getMonth() + 1);
+
+            // While next due date is in the past (or today)
+            // Loop allows catching up multiple months if needed
+            while (nextDue <= now) {
+                console.log(`Generating recurring expense for: ${exp.description}`);
+
+                // Clone the expense
+                await Expense.create({
+                    description: `${exp.description} (Recurring)`,
+                    amount: exp.amount,
+                    paidBy: exp.paidBy,
+                    groupId: exp.groupId,
+                    category: exp.category,
+                    splitType: exp.splitType,
+                    splits: exp.splits,
+                    date: nextDue, // Date is the due date
+                    isRecurring: false // The copy is NOT recurring itself
+                });
+
+                // Update the original's lastGenerated
+                exp.lastGenerated = nextDue;
+                await exp.save();
+
+                // Move nextDue forward
+                nextDue.setMonth(nextDue.getMonth() + 1);
+            }
+        }
+
+    } catch (e) {
+        console.error("Error processing recurring expenses:", e);
+        // Don't block the main request if this fails
+    }
+}
+
 exports.getGroupExpenses = async (req, res) => {
     try {
         const { groupId } = req.params;
+
+        // Process recurring checks before fetching
+        await processRecurringExpenses(groupId);
+
         const { search, category, startDate, endDate } = req.query;
 
         // Build Query

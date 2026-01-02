@@ -677,6 +677,7 @@ function renderExpenses(expenses) {
   expenseListArea.innerHTML = "";
   expenses.forEach(ex => {
     const icon = CATEGORY_ICONS[ex.category] || '📦';
+    const recurringIcon = ex.isRecurring ? '<span title="Recurring Monthly" style="margin-left:5px; font-size: 0.9rem;">🔄</span>' : '';
     const div = document.createElement("div");
     div.className = "expense-card";
     div.style.cursor = "pointer";
@@ -685,7 +686,7 @@ function renderExpenses(expenses) {
         <div style="display:flex; align-items:center; gap:10px;">
            <span style="font-size:1.5rem;">${icon}</span>
            <div>
-               <strong style="display:block;">${ex.description}</strong>
+               <strong style="display:block;">${ex.description} ${recurringIcon}</strong>
                <div class="small" style="opacity:0.7; font-size:0.75rem;">
                  Paid by ${ex.paidBy ? ex.paidBy.name : 'Unknown'} • ${new Date(ex.date).toLocaleDateString()}
                </div>
@@ -706,7 +707,8 @@ function showExpenseDetails(ex) {
   detailAmount.textContent = "₹" + parseFloat(ex.amount).toFixed(2);
   const date = new Date(ex.date).toLocaleString();
   const payer = ex.paidBy ? ex.paidBy.name : "Unknown";
-  detailMeta.textContent = `Paid by ${payer} on ${date}`;
+  const recurringText = ex.isRecurring ? ' • 🔄 Recurring Monthly' : '';
+  detailMeta.textContent = `Paid by ${payer} on ${date}${recurringText}`;
 
   // Render splits
   detailSplitsList.innerHTML = "";
@@ -1014,12 +1016,12 @@ function collectPercentSplits() {
 }
 
 // Create Expense
-// Create Expense
 async function createExpense() {
   const description = expenseDescInput.value.trim();
   const amount = expenseAmountInput.value.trim();
   const category = document.getElementById('expenseCategory').value;
   const splitType = document.getElementById('expenseSplitType').value;
+  const isRecurring = document.getElementById('expenseRecurring').checked; // [NEW]
 
   if (!description || !amount) {
     addExpenseError.textContent = "Required fields missing.";
@@ -1048,7 +1050,7 @@ async function createExpense() {
   }
 
   try {
-    const requestBody = { description, amount, groupId: currentGroupId, splitType, category };
+    const requestBody = { description, amount, groupId: currentGroupId, splitType, category, isRecurring }; // [NEW]
     if (splits) {
       requestBody.splits = splits;
     }
@@ -1073,6 +1075,7 @@ async function createExpense() {
     expenseAmountInput.value = "";
     document.getElementById('expenseCategory').value = 'Other';
     document.getElementById('expenseSplitType').value = 'EQUAL';
+    document.getElementById('expenseRecurring').checked = false; // [NEW]
     document.getElementById('exactSplitsContainer').classList.add('hidden');
     document.getElementById('percentSplitsContainer').classList.add('hidden');
     addExpenseError.textContent = "";

@@ -16,6 +16,11 @@ const expenseSchema = new mongoose.Schema({
         enum: ['Food', 'Travel', 'Bills', 'Entertainment', 'Shopping', 'Other'],
         default: 'Other'
     },
+    // Recurring Expense Fields
+    isRecurring: { type: Boolean, default: false },
+    recurringFrequency: { type: String, enum: ['MONTHLY'], default: 'MONTHLY' },
+    lastGenerated: { type: Date, default: Date.now },
+
     // We can store the detailed split info
     splits: [{
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
