@@ -72,7 +72,7 @@ We have used the following open-source libraries and services:
 NovaSync currently relies on **deterministic algorithms** (Greedy Strategy) rather than probabilistic AI/ML models. This choice was made to ensure **100% mathematical accuracy** in financial settlements, where users expect exact figures down to the decimal.
 
 ### Future Scope (Roadmap)
--   **Receipt Scanning (OCR)**: We plan to integrate Google Cloud Vision API to automatically extract expense details from uploaded receipt images.
+-   **Receipt Scanning (OCR)**: I plan to integrate Google Cloud Vision API to automatically extract expense details from uploaded receipt images.
 -   **Spending Insights (ML)**: A future update could use simple clustering (K-Means) to categorize user spending habits and suggest budget improvements.
 -   **Secure Ledger (Blockchain)**: For enterprise versions, we considered using a private blockchain (Hyperledger) for immutable audit logs, though it is overkill for the current casual use case.
 
