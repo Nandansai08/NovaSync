@@ -6,7 +6,7 @@
 NovaSync follows a **Model-View-Controller (MVC)** architectural pattern, ensuring a clear separation of concerns between the data, the interface, and the business logic.
 
 ### Design Decisions
--   **Client-Side Rendering (CSR)**: We chose to simulate a Single Page Application (SPA) using Vanilla JavaScript. This provides a fast, responsive user experience without the complexity of a heavy frontend framework like React/Angular for this MVP.
+-   **Client-Side Rendering (CSR)**: I chose to simulate a Single Page Application (SPA) using Vanilla JavaScript. This provides a fast, responsive user experience without the complexity of a heavy frontend framework like React/Angular for this MVP.
 -   **Stateless Authentication**: Using JWT (JSON Web Tokens) allows the backend to be stateless and scalable.
 -   **Greedy Settlement Algorithm**: To minimize the number of transactions, we implemented a greedy algorithm that matches the largest debtors with the largest creditors. This is mathematically efficient for simplifying debts.
 
@@ -67,7 +67,6 @@ We have used the following open-source libraries and services:
 
 ## 4. AI / ML / Blockchain / Cybersecurity Features
 
-*(As per Section B requirements)*
 
 ### Current Implementation Status: **Not Applicable (N/A)**
 NovaSync currently relies on **deterministic algorithms** (Greedy Strategy) rather than probabilistic AI/ML models. This choice was made to ensure **100% mathematical accuracy** in financial settlements, where users expect exact figures down to the decimal.
