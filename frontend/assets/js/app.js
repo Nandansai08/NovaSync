@@ -1,4 +1,6 @@
-const API_BASE = "http://localhost:5000/api";
+// Use relative path for production (served by backend) or localhost for dev if on different port (though we serve from backend now)
+// const API_BASE = "http://localhost:5000/api"; 
+const API_BASE = "/api";
 
 // --- State Variables ---
 let authMode = "login";
