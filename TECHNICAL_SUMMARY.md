@@ -8,7 +8,7 @@ NovaSync follows a **Model-View-Controller (MVC)** architectural pattern, ensuri
 ### Design Decisions
 -   **Client-Side Rendering (CSR)**: I chose to simulate a Single Page Application (SPA) using Vanilla JavaScript. This provides a fast, responsive user experience without the complexity of a heavy frontend framework like React/Angular for this MVP.
 -   **Stateless Authentication**: Using JWT (JSON Web Tokens) allows the backend to be stateless and scalable.
--   **Greedy Settlement Algorithm**: To minimize the number of transactions, we implemented a greedy algorithm that matches the largest debtors with the largest creditors. This is mathematically efficient for simplifying debts.
+-   **Greedy Settlement Algorithm**: To minimize the number of transactions, I implemented a greedy algorithm that matches the largest debtors with the largest creditors. This is mathematically efficient for simplifying debts.
 
 ```mermaid
 graph TD
@@ -74,7 +74,7 @@ NovaSync currently relies on **deterministic algorithms** (Greedy Strategy) rath
 ### Future Scope (Roadmap)
 -   **Receipt Scanning (OCR)**: I plan to integrate Google Cloud Vision API to automatically extract expense details from uploaded receipt images.
 -   **Spending Insights (ML)**: A future update could use simple clustering (K-Means) to categorize user spending habits and suggest budget improvements.
--   **Secure Ledger (Blockchain)**: For enterprise versions, we considered using a private blockchain (Hyperledger) for immutable audit logs, though it is overkill for the current casual use case.
+-   **Secure Ledger (Blockchain)**: For enterprise versions, I considered using a private blockchain (Hyperledger) for immutable audit logs, though it is overkill for the current casual use case.
 
 ## 5. List of AI Tools Used
 
