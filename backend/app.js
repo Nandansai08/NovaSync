@@ -30,7 +30,8 @@ const frontendPath = path.join(__dirname, '../frontend');
 app.use(express.static(frontendPath));
 
 // Catch-all route to serve index.html for non-API requests
-app.get('*', (req, res) => {
+// In Express 5, '*' is no longer supported. using regex /.*/ works.
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
