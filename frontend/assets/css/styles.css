@@ -177,6 +177,35 @@ label {
     margin-top: 10px;
 }
 
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    width: auto;
+    margin: 0;
+}
+
+.password-toggle:hover {
+    color: #38bdf8;
+    background: none;
+}
+
 textarea {
     min-height: 80px;
     resize: vertical;

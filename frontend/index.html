@@ -61,8 +61,14 @@
       <label id="authContactLabel" class="hidden">Email or Phone</label>
       <input type="text" id="authContact" class="hidden" placeholder="email@example.com or 9876543210" />
       <label>Password</label>
-      <input type="password" id="authPassword" />
-      <button id="authSubmitBtn" style="width:100%;margin-top:0.2rem;">Login</button>
+      <div class="password-wrapper">
+        <input type="password" id="authPassword" />
+        <button type="button" class="password-toggle" id="togglePasswordBtn">Show</button>
+      </div>
+      <p class="small" id="forgotPasswordRow" style="text-align:right; margin-top: 4px;">
+        <a class="link" id="forgotPasswordLink">Forgot Password?</a>
+      </p>
+      <button id="authSubmitBtn" style="width:100%;margin-top:0.8rem;">Login</button>
       <p class="small" style="margin-top:0.7rem;text-align:center;">
         <span id="toggleAuthModeText">New to NovaSync?</span>
         <a class="link" id="toggleAuthModeLink">Create an account</a>

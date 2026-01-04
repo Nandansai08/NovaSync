@@ -33,6 +33,9 @@ const authPasswordInput = document.getElementById("authPassword");
 const authSubmitBtn = document.getElementById("authSubmitBtn");
 const toggleAuthModeText = document.getElementById("toggleAuthModeText");
 const toggleAuthModeLink = document.getElementById("toggleAuthModeLink");
+const forgotPasswordLink = document.getElementById("forgotPasswordLink");
+const forgotPasswordRow = document.getElementById("forgotPasswordRow");
+const togglePasswordBtn = document.getElementById("togglePasswordBtn");
 const authError = document.getElementById("authError");
 
 // App
@@ -161,7 +164,8 @@ function updateAuthMode() {
     authNameRow.classList.add("hidden");
     authContactLabel.classList.add("hidden");
     authContactInput.classList.add("hidden");
-  } else {
+    forgotPasswordRow.classList.remove("hidden");
+  } else if (authMode === "register") {
     authTitle.textContent = "Register";
     authSubmitBtn.textContent = "Register";
     toggleAuthModeText.textContent = "Already have an account?";
@@ -171,6 +175,65 @@ function updateAuthMode() {
     authNameRow.classList.remove("hidden");
     authContactLabel.classList.remove("hidden");
     authContactInput.classList.remove("hidden");
+    forgotPasswordRow.classList.add("hidden");
+  } else if (authMode === "forgot") {
+    authTitle.textContent = "Reset Password";
+    authSubmitBtn.textContent = "Reset Password";
+    toggleAuthModeText.textContent = "Back to";
+    toggleAuthModeLink.textContent = "Login";
+
+    authUsernameLabel.textContent = "Username";
+    authNameRow.classList.add("hidden");
+    authContactLabel.textContent = "Registered Email or Phone";
+    authContactLabel.classList.remove("hidden");
+    authContactInput.classList.remove("hidden");
+    forgotPasswordRow.classList.add("hidden");
+
+    authPasswordInput.placeholder = "Enter new password";
+  }
+}
+
+function togglePasswordVisibility() {
+  if (authPasswordInput.type === "password") {
+    authPasswordInput.type = "text";
+    togglePasswordBtn.textContent = "Hide";
+  } else {
+    authPasswordInput.type = "password";
+    togglePasswordBtn.textContent = "Show";
+  }
+}
+
+async function resetPassword() {
+  const username = authUsernameInput.value.trim();
+  const contact = authContactInput.value.trim();
+  const newPassword = authPasswordInput.value.trim();
+
+  if (!username || !contact || !newPassword) {
+    authError.textContent = "Please fill all fields.";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, contact, newPassword })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      authError.textContent = data.error;
+      return;
+    }
+
+    alert("Password reset successfully. Please login.");
+    authMode = "login";
+    updateAuthMode();
+    authPasswordInput.value = "";
+    authPasswordInput.placeholder = "";
+  } catch (err) {
+    console.error(err);
+    authError.textContent = "Server error during password reset.";
   }
 }
 
@@ -1272,8 +1335,16 @@ toggleAuthModeLink.addEventListener("click", () => {
 
 authSubmitBtn.addEventListener("click", () => {
   if (authMode === "login") loginUser();
-  else registerUser();
+  else if (authMode === "register") registerUser();
+  else if (authMode === "forgot") resetPassword();
 });
+
+forgotPasswordLink.addEventListener("click", () => {
+  authMode = "forgot";
+  updateAuthMode();
+});
+
+togglePasswordBtn.addEventListener("click", togglePasswordVisibility);
 
 // Menu Actions
 menuLogoutBtn.addEventListener("click", () => {

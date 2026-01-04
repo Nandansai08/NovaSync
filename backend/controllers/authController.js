@@ -94,3 +94,27 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { username, contact, newPassword } = req.body;
+
+    if (!username || !contact || !newPassword) {
+      return res.json({ error: "Please fill all fields" });
+    }
+
+    const user = await User.findOne({ username, contact });
+    if (!user) {
+      return res.json({ error: "User not found with provided username and email/phone" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    user.password = hashed;
+    await user.save();
+
+    res.json({ message: "Password reset successfully" });
+  } catch (e) {
+    console.error(e);
+    res.json({ error: "Server error" });
+  }
+};
