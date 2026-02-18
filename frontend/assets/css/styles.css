@@ -53,10 +53,13 @@ header h1 {
     padding: 8px 12px;
     cursor: pointer;
     border-radius: 5px;
+    box-shadow: none;
 }
 
 .icon-button:hover {
     background: #1e293b;
+    transform: none;
+    box-shadow: none;
 }
 
 .icon-bar {
@@ -90,10 +93,13 @@ header h1 {
     cursor: pointer;
     border-radius: 5px;
     font-size: 0.9rem;
+    box-shadow: none;
 }
 
 .menu-item:hover {
     background: #1e293b;
+    transform: none;
+    box-shadow: none;
 }
 
 .menu-item .small {
@@ -109,20 +115,49 @@ header h1 {
     margin: 8px 0;
 }
 
+/* Skip Link (accessibility) */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #38bdf8;
+    color: #0f1419;
+    padding: 8px 16px;
+    z-index: 1100;
+    font-weight: 600;
+    border-radius: 0 0 5px 0;
+    transition: top 0.2s;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
 /* Buttons */
 button {
-    background: #14191a;
-    color: #eae5e5;
+    background: linear-gradient(135deg, #38bdf8, #3b82f6);
+    color: #ffffff;
     border: none;
     padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     font-size: 0.9rem;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
 }
 
 button:hover {
-    background: #22d3ee;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
 }
 
 button.secondary {
@@ -133,6 +168,8 @@ button.secondary {
 
 button.secondary:hover {
     background: #334155;
+    transform: none;
+    box-shadow: none;
 }
 
 button.small {
@@ -199,11 +236,14 @@ label {
     transition: color 0.2s;
     width: auto;
     margin: 0;
+    box-shadow: none;
 }
 
 .password-toggle:hover {
     color: #38bdf8;
     background: none;
+    transform: translateY(-50%);
+    box-shadow: none;
 }
 
 textarea {
@@ -451,11 +491,14 @@ a.link:hover {
     font-weight: 600;
     font-size: 0.9rem;
     transition: all 0.2s;
+    box-shadow: none;
 }
 
 .tab-btn:hover {
     color: #e0e0e0;
     background: #1e293b;
+    transform: none;
+    box-shadow: none;
 }
 
 .tab-btn.active {
@@ -557,6 +600,7 @@ a.link:hover {
     transition: all 0.2s;
     display: flex;
     align-items: center;
+    box-shadow: none;
 }
 
 .remove-member-btn:hover {
@@ -624,4 +668,78 @@ a.link:hover {
     border: 1px solid rgba(56, 189, 248, 0.3);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+/* Focus Indicators (accessibility) */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+}
+
+a.link:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Loading Spinner */
+.spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Footer */
+.app-footer {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    border-top: 1px solid #334155;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-top: auto;
+}
+
+.app-footer .small {
+    margin-top: 4px;
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+/* Improved Mobile Responsive */
+@media (max-width: 600px) {
+    header h1 {
+        font-size: 1.2rem;
+    }
+
+    .auth-box {
+        margin: 20px 12px;
+        padding: 20px;
+    }
+
+    .modal {
+        width: 95%;
+        padding: 18px;
+    }
+
+    .row {
+        flex-direction: column;
+    }
+
+    .filter-bar {
+        flex-direction: column;
+    }
 }
