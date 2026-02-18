@@ -992,7 +992,6 @@ function collectExactSplits() {
   });
 
   return splits;
-  return splits;
 }
 
 // Percent Splits Functions
@@ -1345,6 +1344,25 @@ forgotPasswordLink.addEventListener("click", () => {
 });
 
 togglePasswordBtn.addEventListener("click", togglePasswordVisibility);
+
+// Enter key support for auth form
+authPasswordInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    if (authMode === "login") loginUser();
+    else if (authMode === "register") registerUser();
+    else if (authMode === "forgot") resetPassword();
+  }
+});
+
+// Enter key support for add member modal
+addMemberUsername.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") addMemberToGroup();
+});
+
+// Enter key support for create group page
+createPageGroupName.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") createGroup();
+});
 
 // Menu Actions
 menuLogoutBtn.addEventListener("click", () => {
