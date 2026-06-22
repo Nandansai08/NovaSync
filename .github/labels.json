@@ -1,0 +1,21 @@
+[
+  { "name": "bug", "color": "d73a4a", "description": "Something isn't working as expected" },
+  { "name": "regression", "color": "b60205", "description": "A previously working feature broke" },
+  { "name": "enhancement", "color": "a2eeef", "description": "Improvement to an existing feature" },
+  { "name": "feature-request", "color": "84b6eb", "description": "Request for new functionality" },
+  { "name": "documentation", "color": "0075ca", "description": "Improvements or additions to documentation" },
+  { "name": "needs-triage", "color": "fbca04", "description": "Needs maintainer review to confirm validity/priority" },
+  { "name": "in-progress", "color": "fef2c0", "description": "Actively being worked on" },
+  { "name": "blocked", "color": "e99695", "description": "Blocked by another issue, PR, or external dependency" },
+  { "name": "wontfix", "color": "ffffff", "description": "This will not be worked on" },
+  { "name": "duplicate", "color": "cfd3d7", "description": "This issue or PR already exists" },
+  { "name": "priority:low", "color": "c2e0c6", "description": "Low priority" },
+  { "name": "priority:medium", "color": "f9d0c4", "description": "Medium priority" },
+  { "name": "priority:high", "color": "e11d21", "description": "High priority" },
+  { "name": "needs-review", "color": "bfd4f2", "description": "Awaiting code review" },
+  { "name": "approved", "color": "0e8a16", "description": "Approved by a maintainer, ready to merge" },
+  { "name": "changes-requested", "color": "d4c5f9", "description": "Reviewer requested changes" },
+  { "name": "good-first-issue", "color": "7057ff", "description": "Good for newcomers" },
+  { "name": "help-wanted", "color": "008672", "description": "Extra attention or contributors wanted" },
+  { "name": "chore", "color": "ededed", "description": "Tooling, refactors, or maintenance with no functional change" }
+]

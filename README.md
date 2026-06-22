@@ -1,10 +1,36 @@
-# NovaSync - Expense Splitting Application
+# NovaSync — Expense Splitting Application
 
-> **“Nova”** means a sudden burst of light; **“Sync”** means harmony in motion. Together, they evoke scattered energies finding alignment — just like individual expenses settling into a balanced, unified whole.
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Nandansai08/NovaSync/ci.yml?branch=main&label=build)](https://github.com/Nandansai08/NovaSync/actions)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-orange.svg)](./CHANGELOG.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+
+> **"Nova"** means a sudden burst of light; **"Sync"** means harmony in motion. Together, they evoke scattered energies finding alignment — just like individual expenses settling into a balanced, unified whole.
+
+NovaSync is a smart group expense splitter that turns "who owes whom?" into a solved problem — it tracks shared expenses, supports equal/exact/percentage splits, and computes the minimum number of payments needed to settle every debt in a group.
 
 ---
 
-## 📌 Project Overview and Problem Statement
+## Table of Contents
+
+- [Problem & Solution](#problem--solution)
+- [Features](#features)
+- [Live Demo](#live-demo)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [API Documentation](#api-documentation)
+- [Screenshots](#screenshots)
+- [The Algorithm](#the-algorithm-technical-highlight)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [Security](#security)
+- [License](#license)
+- [Credits & Attributions](#credits-and-attributions)
+
+---
+
+## Problem & Solution
 
 ### The Problem
 Managing shared expenses in groups (trips, flatmates, events) is notoriously chaotic.
@@ -20,76 +46,123 @@ NovaSync is a **smart expense splitter** that restores harmony to group finances
 
 ---
 
-## 🚀 Setup and Installation
+## Features
 
-### Prerequisites
-- **Node.js** (v14 or higher)
-- **MongoDB** (Local instance or Atlas URI)
-
-### Installation Steps
-
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/yourusername/NovaSync.git
-    cd NovaSync
-    ```
-
-2.  **Backend Setup**
-    ```bash
-    cd backend
-    npm install
-    ```
-    - Create a `.env` file in the `backend/` directory:
-      ```env
-      MONGO_URI=mongodb://localhost:27017/novasync
-      JWT_SECRET=your_super_secret_key_123
-      PORT=5000
-      ```
-    - Start the Server:
-      ```bash
-      node server.js
-      ```
-
-3.  **Frontend Setup**
-    - The frontend is built with **Vanilla JS** and requires no build step.
-    - Simply open `frontend/index.html` in your browser.
-    - *Recommended*: Use **Live Server** extension in VS Code for the best experience.
+- **Secure authentication** — registration, login, and JWT-based sessions (`backend/controllers/authController.js`)
+- **Group management** — create groups, invite members by username, leave or remove members (`backend/controllers/groupController.js`)
+- **Flexible expense logging** — `EQUAL`, `EXACT`, and `PERCENT` split types with category tagging (Food, Travel, Bills, Entertainment, Shopping, Other)
+- **Recurring expenses** — mark an expense as monthly-recurring and NovaSync auto-generates the next occurrence (`processRecurringExpenses` in `backend/controllers/expenseController.js`)
+- **Settlement Plan** — a greedy debt-simplification engine reduces N\*(N-1) potential transactions down to at most N-1 (`backend/services/settlementService.js`)
+- **Group chat / comments** — lightweight in-group messaging tied to each expense thread (`backend/controllers/commentController.js`)
+- **Activity feed** — audit log of group creation, member changes, and expense edits (`backend/models/Activity.js`)
+- **Search & filters** — filter group expenses by description, category, and date range
 
 ---
 
-## 📖 Usage Guide and Features
+## Live Demo
 
-### 1. User Authentication
-- **Secure Registration**: Sign up with a username, full name, and password.
-- **JWT Content**: Sessions are maintained securely using JSON Web Tokens.
+🌐 **[https://novasync.onrender.com](https://novasync.onrender.com)** *(placeholder — replace with your deployed URL once live)*
 
-### 2. Group Management
-- **Create Groups**: Organize expenses by event (e.g., "Goa Trip", "Apartment 101").
-- **Invite Members**: Add friends using their unique usernames.
+---
 
-### 3. Expense Logging
-- **Detailed Entries**: Add description, amount, date, and category (Food, Travel, etc.).
-- **Flexible Splitting**:
-    - **Equal Split**: Automatically divides amount by member count.
-    - **Exact Amount**: Specify exactly how much each person owes.
-    - **Percentage**: Split by custom percentages.
-- **Recurring Expenses**: Mark bills like Rent or Netflix to repeat monthly.
+## Tech Stack
 
-### 4. The Settlement Plan (Core Feature)
-- Go to the **Settlement Plan** tab to see who needs to pay whom.
-- The app calculates the **minimum number of transfers** to settle all debts.
-- *Example*: Instead of A paying B, and B paying C, the system might tell A to pay C directly.
+| Component | Technology | Reasoning |
+| :--- | :--- | :--- |
+| **Frontend** | HTML5, CSS3 | Semantic structure and custom "Dark Mode" styling without frameworks. |
+| | Vanilla JavaScript | Lightweight DOM manipulation, no build step required. |
+| **Backend** | Node.js + Express | Scalable, non-blocking I/O for concurrent API requests. |
+| **Database** | MongoDB + Mongoose | Flexible schema design for Users, Groups, Expenses, and Activity. |
+| **Auth** | JWT + Bcrypt | Stateless authentication and password hashing. |
+
+---
+
+## Getting Started
+
+### Prerequisites
+- **Node.js** v14 or higher
+- **MongoDB** — a local instance or a [MongoDB Atlas](https://www.mongodb.com/atlas) URI
+- A modern browser (no build tooling needed for the frontend)
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/Nandansai08/NovaSync.git
+cd NovaSync
+```
+
+### 2. Backend setup
+```bash
+cd backend
+npm install
+```
+
+Create a `.env` file in `backend/` (see `backend/.env.example` for the template):
+```env
+MONGO_URI=mongodb://localhost:27017/novasync
+PORT=5000
+JWT_SECRET=some_secret_here
+```
+
+Start the server:
+```bash
+npm start
+# or: node server.js
+```
+The API will be available at `http://localhost:5000/api`.
+
+### 3. Frontend setup
+The frontend is built with vanilla HTML/CSS/JS and requires no build step.
+```bash
+cd frontend
+```
+- Open `frontend/index.html` directly in your browser, **or**
+- Use the **Live Server** extension in VS Code for auto-reload during development.
+
+> Note: the frontend's `API_BASE` constant in `frontend/assets/js/app.js` must point at your running backend (defaults to `http://localhost:5000/api`).
+
+---
+
+## Project Structure
+
+```
+NovaSync/
+├── backend/
+│   ├── app.js                     # Express app setup (middleware, routes)
+│   ├── server.js                  # Entry point — connects DB, starts HTTP server
+│   ├── config/
+│   │   └── db.js                  # MongoDB connection
+│   ├── controllers/
+│   │   ├── authController.js      # register, login, profile, password reset
+│   │   ├── groupController.js     # create/join/leave/remove group members
+│   │   ├── expenseController.js   # add/list/delete expenses, recurring logic
+│   │   ├── commentController.js   # group chat
+│   │   └── activityController.js  # audit/activity feed
+│   ├── middleware/
+│   │   └── auth.js                # JWT verification middleware
+│   ├── models/                    # Mongoose schemas (User, Group, GroupMember, Expense, Comment, Activity)
+│   ├── routes/                     # Express routers per resource
+│   └── services/
+│       └── settlementService.js   # Greedy debt-simplification algorithm
+├── frontend/
+│   ├── index.html
+│   └── assets/
+│       ├── css/styles.css
+│       └── js/app.js               # SPA-style vanilla JS client
+├── screenshots/                    # UI screenshots referenced below
+├── API_DOCUMENTATION.md
+├── TECHNICAL_SUMMARY.md
+└── PRESENTATION.pdf
+```
 
 ---
 
 ## API Documentation
-See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for complete API reference.
 
-## 🎥 Demo Video / Deployed Link
+Full endpoint reference (auth, groups, expenses, comments, balances) lives in [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
 
-### 🌐 [Live Deployment: https://novasync.onrender.com](https://novasync.onrender.com)
+---
 
-## 📸 Screenshots
+## Screenshots
 
 | Login Page | Registration |
 |:---:|:---:|
@@ -111,46 +184,67 @@ See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for complete API reference.
 |:---:|:---:|
 | ![Split Types](screenshots/split_types.png) | ![Add Member](screenshots/add_member.png) |
 
-## 🛠️ Technology Stack
-
-| Component | Technology | Reasoning |
-| :--- | :--- | :--- |
-| **Frontend** | **HTML5, CSS3** | Semantic structure and custom "Dark Mode" styling without frameworks for raw performance. |
-| | **Vanilla JavaScript** | distinct separation of concerns and lightweight DOM manipulation. |
-| **Backend** | **Node.js + Express** | Scalable, non-blocking I/O event loop perfect for handling concurrent API requests. |
-| **Database** | **MongoDB + Mongoose** | Flexible schema design to handle complex relationships between Users, Groups, and Expenses. |
-| **Auth** | **JWT + Bcrypt** | Industry-standard stateless authentication and password hashing. |
+More context and architecture diagrams are available in [TECHNICAL_SUMMARY.md](./TECHNICAL_SUMMARY.md) and [PRESENTATION.pdf](./PRESENTATION.pdf).
 
 ---
 
-## 🧠 The Algorithm (Technical Highlight)
-NovaSync treats the group as a graph where users are nodes and debts are directed edges. 
-1.  **Net Flow Calculation**: It calculates the net balance (`To Receive` - `To Pay`) for each user.
-2.  **Greedy Minimization**: It iteratively matches the user with the highest negative balance (debtor) to the user with the highest positive balance (creditor), settling the smaller of the two amounts.
-3.  **Result**: This reduces a graph of `N*(N-1)` potential transactions to at most `N-1`.
+## The Algorithm (Technical Highlight)
+
+NovaSync treats the group as a graph where users are nodes and debts are directed edges.
+1. **Net Flow Calculation**: Computes the net balance (`To Receive` − `To Pay`) for each user.
+2. **Greedy Minimization**: Iteratively matches the user with the highest negative balance (debtor) to the user with the highest positive balance (creditor), settling the smaller of the two amounts.
+3. **Result**: This reduces a graph of `N*(N-1)` potential transactions to at most `N-1`.
+
+See `backend/services/settlementService.js` for the implementation.
 
 ---
 
-## 🤝 Credits and Attributions
+## Roadmap
 
-This project was built from scratch, but I acknowledge the following open-source tools and assets:
+- [ ] Receipt scanning (OCR) for auto-extracting expense details from photos
+- [ ] Spending insights via lightweight clustering of categories/habits
+- [ ] Push/email notifications for new expenses and settlement reminders
+- [ ] Multi-currency support
+- [ ] Automated test suite (unit tests for the settlement algorithm, integration tests for routes)
+- [ ] CI pipeline (lint + test on every PR)
+- [ ] Optional: exportable settlement history (CSV/PDF)
+
+Have an idea? Open a [feature request](.github/ISSUE_TEMPLATE/feature_request.md).
+
+---
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for branch naming, commit conventions, and the PR checklist before opening a pull request. Also see our [Code of Conduct](./CODE_OF_CONDUCT.md).
+
+---
+
+## Security
+
+If you discover a security vulnerability, please **do not** open a public issue. See [SECURITY.md](./SECURITY.md) for responsible disclosure instructions.
+
+---
+
+## License
+
+This project is licensed under the MIT License. *(Add a `LICENSE` file at the repo root to finalize this — see the badge above.)*
+
+---
+
+## Credits and Attributions
+
+This project was built from scratch, but acknowledges the following open-source tools and assets:
 
 ### Third-Party Assets
-- **FontAwesome (Free Tier)**: Used for UI icons (Trash, Edit, User, etc.).  
-  *Source: [fontawesome.com](https://fontawesome.com)*
-- **Google Fonts**: Used 'Inter' and 'Outfit' typefaces.  
-  *Source: [fonts.google.com](https://fonts.google.com)*
+- **FontAwesome (Free Tier)** — UI icons. *Source: [fontawesome.com](https://fontawesome.com)*
+- **Google Fonts** — 'Inter' and 'Outfit' typefaces. *Source: [fonts.google.com](https://fonts.google.com)*
 
 ### Libraries & Dependencies
-- **Express.js**: Fast, unopinionated web framework for Node.js.  
-  *License: MIT*
-- **Mongoose**: Elegant mongodb object modeling for node.js.  
-  *License: MIT*
-- **Bcrypt.js**: Optimized bcrypt in JavaScript with zero dependencies.  
-  *License: MIT*
-- **JsonWebToken**: Implementation of JSON Web Tokens.  
-  *License: MIT*
+- **Express.js** — Web framework for Node.js. *License: MIT*
+- **Mongoose** — MongoDB object modeling. *License: MIT*
+- **Bcrypt** — Password hashing. *License: MIT*
+- **jsonwebtoken** — JSON Web Token implementation. *License: MIT*
 
 ### Development Tools
-- **Google Gemini**: Served as an AI Pair Programmer for debugging complex async logic and refining CSS aesthetics.
-- **Mermaid.js**: Used for generating architecture diagrams in documentation.
+- **Google Gemini** — AI pair programmer for debugging async logic and refining CSS.
+- **Mermaid.js** — Architecture diagrams in documentation.
