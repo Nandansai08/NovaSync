@@ -2,6 +2,8 @@ const Group = require('../models/Group');
 const GroupMember = require('../models/GroupMember');
 const User = require('../models/User');
 const Activity = require('../models/Activity');
+const Expense = require('../models/Expense');
+const settlementService = require('../services/settlementService');
 
 exports.addMember = async (req, res) => {
   try {
@@ -126,7 +128,31 @@ exports.removeMember = async (req, res) => {
       return res.status(400).json({ error: "Cannot remove self. Use 'Leave Group'." });
     }
 
+    // Check if member has outstanding balance
+    const expenses = await Expense.find({ groupId });
+    const members = await GroupMember.find({ groupId });
+    const { balances } = settlementService.calculateBalances(expenses, members);
+
+    const memberBalance = balances[userId];
+    if (memberBalance !== undefined && Math.abs(memberBalance) >= 0.01) {
+      return res.status(400).json({
+        error: "Cannot remove member with outstanding balance. Settle balances first."
+      });
+    }
+
     await GroupMember.findOneAndDelete({ groupId, userId });
+
+    // Log Activity
+    const removedUser = await User.findById(userId);
+    if (removedUser) {
+      await Activity.create({
+        groupId,
+        userId: req.user.id,
+        type: 'MEMBER_REMOVED',
+        description: `${req.user.name} removed ${removedUser.name}`
+      });
+    }
+
     res.json({ message: "Member removed" });
 
   } catch (e) {
@@ -138,7 +164,33 @@ exports.removeMember = async (req, res) => {
 exports.leaveGroup = async (req, res) => {
   try {
     const { groupId } = req.params;
+
+    // Check if member has outstanding balance
+    const expenses = await Expense.find({ groupId });
+    const members = await GroupMember.find({ groupId });
+    const { balances } = settlementService.calculateBalances(expenses, members);
+
+    const memberBalance = balances[req.user.id];
+    if (memberBalance !== undefined && Math.abs(memberBalance) >= 0.01) {
+      return res.status(400).json({
+        error: "Cannot leave group with outstanding balance. Settle balances first."
+      });
+    }
+
     await GroupMember.findOneAndDelete({ groupId, userId: req.user.id });
+
+    // Log Activity
+    const user = await User.findById(req.user.id);
+    if (user) {
+      const group = await Group.findById(groupId);
+      await Activity.create({
+        groupId,
+        userId: req.user.id,
+        type: 'MEMBER_LEFT',
+        description: group ? `${user.name} left the group "${group.name}"` : `${user.name} left the group`
+      });
+    }
+
     res.json({ message: "You have left the group" });
   } catch (e) {
     console.error(e);
