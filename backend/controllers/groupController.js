@@ -2,20 +2,18 @@ const Group = require('../models/Group');
 const GroupMember = require('../models/GroupMember');
 const User = require('../models/User');
 const Activity = require('../models/Activity');
-const Expense = require('../models/Expense');
+const mongoose = require('mongoose');
 const settlementService = require('../services/settlementService');
 
 exports.addMember = async (req, res) => {
   try {
     const { groupId, username } = req.body;
 
-    // Find user
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Check if already in group
     const exists = await GroupMember.findOne({ groupId, userId: user._id });
     if (exists) {
       return res.status(400).json({ error: "User already in group" });
@@ -23,10 +21,9 @@ exports.addMember = async (req, res) => {
 
     await GroupMember.create({ groupId, userId: user._id });
 
-    // Log Activity
     await Activity.create({
       groupId,
-      userId: req.user.id, // Who added the member
+      userId: req.user.id,
       type: 'MEMBER_ADDED',
       description: `${req.user.name} added ${user.name}`
     });
@@ -50,7 +47,6 @@ exports.createGroup = async (req, res) => {
       createdBy: req.user.id
     });
 
-    // Add creator as first member
     await GroupMember.create({
       groupId: group._id,
       userId: req.user.id
@@ -58,7 +54,6 @@ exports.createGroup = async (req, res) => {
 
     res.json({ message: "Group created", group });
 
-    // Log Activity
     await Activity.create({
       groupId: group._id,
       userId: req.user.id,
@@ -69,7 +64,7 @@ exports.createGroup = async (req, res) => {
     console.error("Error creating group:", e);
     res.json({ error: e.message || "Server error" });
   }
-}
+};
 
 exports.getMyGroups = async (req, res) => {
   try {
@@ -82,8 +77,8 @@ exports.getMyGroups = async (req, res) => {
   } catch (e) {
     res.json({ error: "Server error" });
   }
-}
-// GET /api/groups/:id  -> one group + members
+};
+
 exports.getGroupDetail = async (req, res) => {
   try {
     const groupId = req.params.id;
@@ -95,7 +90,7 @@ exports.getGroupDetail = async (req, res) => {
 
     const memberships = await GroupMember
       .find({ groupId })
-      .populate("userId", "name username contact");
+      .populate('userId', 'name username contact');
 
     const members = memberships.map(m => ({
       id: m.userId._id,
@@ -107,7 +102,7 @@ exports.getGroupDetail = async (req, res) => {
     res.json({ group, members });
   } catch (err) {
     console.error(err);
-    res.json({ error: "Server error" });
+    res.json({ error: 'Server error' });
   }
 };
 
@@ -116,48 +111,65 @@ exports.removeMember = async (req, res) => {
     const { groupId, userId } = req.params;
     const group = await Group.findById(groupId);
 
-    if (!group) return res.status(404).json({ error: "Group not found" });
+    if (!group) return res.status(404).json({ error: 'Group not found' });
 
-    // Only creator can remove members
     if (group.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ error: "Only group admin can remove members" });
+      return res.status(403).json({ error: 'Only group admin can remove members' });
     }
 
-    // Cannot remove self via this route (use leave instead)
     if (userId === req.user.id) {
       return res.status(400).json({ error: "Cannot remove self. Use 'Leave Group'." });
     }
 
-    // Check if member has outstanding balance
-    const expenses = await Expense.find({ groupId });
-    const members = await GroupMember.find({ groupId });
-    const { balances } = settlementService.calculateBalances(expenses, members);
+    const { balance, isMember } = await settlementService.getMemberBalance(groupId, userId);
+    if (!isMember) {
+      return res.status(404).json({ error: 'User is not a member of this group.' });
+    }
 
-    const memberBalance = balances[userId];
-    if (memberBalance !== undefined && Math.abs(memberBalance) >= 0.01) {
+    if (balance !== undefined && Math.abs(balance) >= 0.01) {
+      const direction = balance > 0 ? 'is owed' : 'owes';
       return res.status(400).json({
-        error: "Cannot remove member with outstanding balance. Settle balances first."
+        error: 'Cannot remove member: they ' + direction + ' $' + Math.abs(balance).toFixed(2) + '. Settle first.'
       });
     }
 
-    await GroupMember.findOneAndDelete({ groupId, userId });
+    const session = await mongoose.startSession();
+    try {
+      session.startTransaction();
 
-    // Log Activity
-    const removedUser = await User.findById(userId);
-    if (removedUser) {
-      await Activity.create({
+      const { balance: freshBalance } = await settlementService.getMemberBalance(groupId, userId);
+      if (freshBalance !== undefined && Math.abs(freshBalance) >= 0.01) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ error: 'Balance changed during operation. Try again.' });
+      }
+
+      await GroupMember.findOneAndDelete({ groupId, userId }).session(session);
+
+      const removedUser = await User.findById(userId);
+      const description = removedUser
+        ? req.user.name + ' removed ' + removedUser.name
+        : req.user.name + ' removed user ' + userId;
+      await Activity.create([{
         groupId,
         userId: req.user.id,
         type: 'MEMBER_REMOVED',
-        description: `${req.user.name} removed ${removedUser.name}`
-      });
+        description
+      }], { session });
+
+      await session.commitTransaction();
+    } catch (txErr) {
+      await session.abortTransaction();
+      throw txErr;
+    } finally {
+      session.endSession();
     }
 
-    res.json({ message: "Member removed" });
+    res.json({ message: 'Member removed' });
 
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -165,35 +177,58 @@ exports.leaveGroup = async (req, res) => {
   try {
     const { groupId } = req.params;
 
-    // Check if member has outstanding balance
-    const expenses = await Expense.find({ groupId });
-    const members = await GroupMember.find({ groupId });
-    const { balances } = settlementService.calculateBalances(expenses, members);
+    const membership = await GroupMember.findOne({ groupId, userId: req.user.id });
+    if (!membership) {
+      return res.status(404).json({ error: 'You are not a member of this group.' });
+    }
 
-    const memberBalance = balances[req.user.id];
-    if (memberBalance !== undefined && Math.abs(memberBalance) >= 0.01) {
+    const { balance } = await settlementService.getMemberBalance(groupId, req.user.id);
+
+    if (balance !== undefined && Math.abs(balance) >= 0.01) {
+      const direction = balance > 0 ? 'are owed' : 'owe';
       return res.status(400).json({
-        error: "Cannot leave group with outstanding balance. Settle balances first."
+        error: 'Cannot leave group: you ' + direction + ' $' + Math.abs(balance).toFixed(2) + '. Settle first.'
       });
     }
 
-    await GroupMember.findOneAndDelete({ groupId, userId: req.user.id });
+    const session = await mongoose.startSession();
+    try {
+      session.startTransaction();
 
-    // Log Activity
-    const user = await User.findById(req.user.id);
-    if (user) {
+      const { balance: freshBalance } = await settlementService.getMemberBalance(groupId, req.user.id);
+      if (freshBalance !== undefined && Math.abs(freshBalance) >= 0.01) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ error: 'Balance changed during operation. Try again.' });
+      }
+
+      await GroupMember.findOneAndDelete({ groupId, userId: req.user.id }).session(session);
+
+      const user = await User.findById(req.user.id);
       const group = await Group.findById(groupId);
-      await Activity.create({
+      const description = user
+        ? (group
+            ? user.name + ' left the group "' + group.name + '"'
+            : user.name + ' left the group')
+        : 'User ' + req.user.id + ' left the group';
+      await Activity.create([{
         groupId,
         userId: req.user.id,
         type: 'MEMBER_LEFT',
-        description: group ? `${user.name} left the group "${group.name}"` : `${user.name} left the group`
-      });
+        description
+      }], { session });
+
+      await session.commitTransaction();
+    } catch (txErr) {
+      await session.abortTransaction();
+      throw txErr;
+    } finally {
+      session.endSession();
     }
 
-    res.json({ message: "You have left the group" });
+    res.json({ message: 'You have left the group' });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: 'Server error' });
   }
 };
