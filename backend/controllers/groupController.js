@@ -137,7 +137,7 @@ exports.removeMember = async (req, res) => {
     try {
       session.startTransaction();
 
-      const { balance: freshBalance } = await settlementService.getMemberBalance(groupId, userId);
+      const { balance: freshBalance } = await settlementService.getMemberBalance(groupId, userId, session);
       if (freshBalance !== undefined && Math.abs(freshBalance) >= 0.01) {
         await session.abortTransaction();
         session.endSession();
@@ -195,7 +195,7 @@ exports.leaveGroup = async (req, res) => {
     try {
       session.startTransaction();
 
-      const { balance: freshBalance } = await settlementService.getMemberBalance(groupId, req.user.id);
+      const { balance: freshBalance } = await settlementService.getMemberBalance(groupId, req.user.id, session);
       if (freshBalance !== undefined && Math.abs(freshBalance) >= 0.01) {
         await session.abortTransaction();
         session.endSession();

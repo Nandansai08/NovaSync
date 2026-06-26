@@ -8,14 +8,14 @@
  * Handles its own data fetching so the controller doesn't need to import Expense/GroupMember directly.
  * @returns {Promise<{balance: number|null, isMember: boolean}>}
  */
-exports.getMemberBalance = async (groupId, userId) => {
+exports.getMemberBalance = async (groupId, userId, session) => {
   const Expense = require('../models/Expense');
   const GroupMember = require('../models/GroupMember');
-  const membership = await GroupMember.findOne({ groupId, userId });
+  const membership = await (session ? GroupMember.findOne({ groupId, userId }).session(session) : GroupMember.findOne({ groupId, userId }));
   if (!membership) return { balance: null, isMember: false };
 
-  const expenses = await Expense.find({ groupId });
-  const members = await GroupMember.find({ groupId });
+  const expenses = await (session ? Expense.find({ groupId }).session(session) : Expense.find({ groupId }));
+  const members = await (session ? GroupMember.find({ groupId }).session(session) : GroupMember.find({ groupId }));
   const { balances } = exports.calculateBalances(expenses, members);
   const uid = userId.toString();
   return { balance: balances[uid] !== undefined ? balances[uid] : 0, isMember: true };
