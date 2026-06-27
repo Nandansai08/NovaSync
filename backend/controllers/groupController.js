@@ -126,7 +126,7 @@ exports.removeMember = async (req, res) => {
       return res.status(404).json({ error: 'User is not a member of this group.' });
     }
 
-    if (balance !== undefined && Math.abs(balance) >= 0.01) {
+    if (Math.abs(balance) >= 0.01) {
       const direction = balance > 0 ? 'is owed' : 'owes';
       return res.status(400).json({
         error: 'Cannot remove member: they ' + direction + ' $' + Math.abs(balance).toFixed(2) + '. Settle first.'
@@ -138,7 +138,7 @@ exports.removeMember = async (req, res) => {
       session.startTransaction();
 
       const { balance: freshBalance } = await settlementService.getMemberBalance(groupId, userId, session);
-      if (freshBalance !== undefined && Math.abs(freshBalance) >= 0.01) {
+      if (Math.abs(freshBalance) >= 0.01) {
         await session.abortTransaction();
         session.endSession();
         return res.status(400).json({ error: 'Balance changed during operation. Try again.' });
@@ -184,7 +184,7 @@ exports.leaveGroup = async (req, res) => {
 
     const { balance } = await settlementService.getMemberBalance(groupId, req.user.id);
 
-    if (balance !== undefined && Math.abs(balance) >= 0.01) {
+    if (Math.abs(balance) >= 0.01) {
       const direction = balance > 0 ? 'are owed' : 'owe';
       return res.status(400).json({
         error: 'Cannot leave group: you ' + direction + ' $' + Math.abs(balance).toFixed(2) + '. Settle first.'
@@ -196,7 +196,7 @@ exports.leaveGroup = async (req, res) => {
       session.startTransaction();
 
       const { balance: freshBalance } = await settlementService.getMemberBalance(groupId, req.user.id, session);
-      if (freshBalance !== undefined && Math.abs(freshBalance) >= 0.01) {
+      if (Math.abs(freshBalance) >= 0.01) {
         await session.abortTransaction();
         session.endSession();
         return res.status(400).json({ error: 'Balance changed during operation. Try again.' });

@@ -1,3 +1,6 @@
+const Expense = require('../models/Expense');
+const GroupMember = require('../models/GroupMember');
+
 /**
  * Settlement Service
  * Calculates net balances and generates a minimized settlement plan.
@@ -6,11 +9,9 @@
 /**
  * Calculate balance for a single member in a group.
  * Handles its own data fetching so the controller doesn't need to import Expense/GroupMember directly.
- * @returns {Promise<{balance: number|null, isMember: boolean}>}
+ * @returns {Promise<{balance: number, isMember: boolean}>}
  */
 exports.getMemberBalance = async (groupId, userId, session) => {
-  const Expense = require('../models/Expense');
-  const GroupMember = require('../models/GroupMember');
   const membership = await (session ? GroupMember.findOne({ groupId, userId }).session(session) : GroupMember.findOne({ groupId, userId }));
   if (!membership) return { balance: null, isMember: false };
 
