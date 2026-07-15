@@ -9,12 +9,12 @@ let pageMode = 'main'; // 'main' | 'createGroup' | 'allGroups' | 'invites'
 let viewMode = 'groups'; // 'groups' | 'chat'
 
 const CATEGORY_ICONS = {
-  'Food': '🍔',
-  'Travel': '✈️',
-  'Bills': '🧾',
-  'Entertainment': '🎬',
-  'Shopping': '🛍️',
-  'Other': '📦'
+  'Food': { icon: '🍔', color: '#f97316' },
+  'Travel': { icon: '✈️', color: '#3b82f6' },
+  'Bills': { icon: '🧾', color: '#6366f1' },
+  'Entertainment': { icon: '🎬', color: '#ec4899' },
+  'Shopping': { icon: '🛍️', color: '#8b5cf6' },
+  'Other': { icon: '📦', color: '#64748b' }
 };
 
 // --- DOM Elements ---
@@ -741,7 +741,7 @@ async function loadGroupExpenses(groupId) {
 function renderExpenses(expenses) {
   expenseListArea.innerHTML = "";
   expenses.forEach(ex => {
-    const icon = CATEGORY_ICONS[ex.category] || '📦';
+    const catInfo = CATEGORY_ICONS[ex.category] || { icon: '📦', color: '#64748b' };
     const recurringIcon = ex.isRecurring ? '<span title="Recurring Monthly" style="margin-left:5px; font-size: 0.9rem;">🔄</span>' : '';
     const div = document.createElement("div");
     div.className = "expense-card";
@@ -749,10 +749,11 @@ function renderExpenses(expenses) {
     div.innerHTML = `
       <div class="flex-space">
         <div style="display:flex; align-items:center; gap:10px;">
-           <span style="font-size:1.5rem;">${icon}</span>
+           <span style="font-size:1.5rem; display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px; background:${catInfo.color}15; color:${catInfo.color};">${catInfo.icon}</span>
            <div>
                <strong style="display:block;">${ex.description} ${recurringIcon}</strong>
-               <div class="small" style="opacity:0.7; font-size:0.75rem;">
+               <div class="small" style="opacity:0.7; font-size:0.75rem; display:flex; align-items:center; gap:6px;">
+                 <span style="background:${catInfo.color}20; color:${catInfo.color}; padding:1px 6px; border-radius:4px; font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.3px;">${ex.category || 'Other'}</span>
                  Paid by ${ex.paidBy ? ex.paidBy.name : 'Unknown'} • ${new Date(ex.date).toLocaleDateString()}
                </div>
            </div>
