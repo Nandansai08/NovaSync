@@ -61,7 +61,7 @@ NovaSync is a **smart expense splitter** that restores harmony to group finances
 
 ## Live Demo
 
-🌐 **[https://novasync.onrender.com](https://novasync.onrender.com)** *(placeholder — replace with your deployed URL once live)*
+🌐 **[https://novasync.vercel.app](https://novasync.vercel.app)** *(placeholder — replace with your deployed URL once live)*
 
 ---
 
@@ -119,6 +119,20 @@ cd frontend
 - Use the **Live Server** extension in VS Code for auto-reload during development.
 
 > Note: the frontend's `API_BASE` constant in `frontend/assets/js/app.js` must point at your running backend (defaults to `http://localhost:5000/api`).
+
+---
+
+## Deploying to Vercel
+
+The repo ships with a `vercel.json` that deploys the Express API as a serverless function (`api/index.js`) and serves the `frontend/` directory statically from Vercel's CDN.
+
+1. Import the repository at [vercel.com/new](https://vercel.com/new) (or run `npx vercel` from the repo root). No framework preset or build command is needed — the config in `vercel.json` handles routing.
+2. In the Vercel project settings, add these **Environment Variables**:
+   - `MONGO_URI` — your MongoDB connection string (use [MongoDB Atlas](https://www.mongodb.com/atlas); a local MongoDB is not reachable from Vercel). In Atlas, allow access from anywhere (`0.0.0.0/0`) under Network Access, since serverless functions don't have fixed IPs.
+   - `JWT_SECRET` — a long random string used to sign auth tokens.
+3. Deploy. `/api/*` requests are handled by the serverless function; everything else falls back to `frontend/index.html`.
+
+Because the frontend uses a relative `API_BASE` (`/api`), no frontend changes are needed — it automatically talks to the API on the same domain.
 
 ---
 

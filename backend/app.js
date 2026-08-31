@@ -25,7 +25,8 @@ app.use('/api/activity', activityRoutes);
 app.use('/api/comments', commentRoutes);
 
 // Serve Frontend Static Files
-// This allows the Node server to serve the frontend (e.g., on Render deploys)
+// Used when running the Node server directly (local dev). On Vercel the
+// frontend is served statically by the CDN instead (see vercel.json).
 const frontendPath = path.join(__dirname, '../frontend');
 app.use(express.static(frontendPath));
 

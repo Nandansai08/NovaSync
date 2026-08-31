@@ -1,0 +1,17 @@
+{
+  "name": "novasync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NovaSync — group expense tracker. Root manifest used by Vercel to install the API's dependencies.",
+  "scripts": {
+    "start": "node backend/server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.0.0"
+  }
+}
