@@ -1127,6 +1127,10 @@ async function createExpense() {
   }
 
   try {
+    // Disable submit button while request is in flight
+    confirmAddExpenseBtn.disabled = true;
+    confirmAddExpenseBtn.textContent = "Adding...";
+
     const requestBody = { description, amount, groupId: currentGroupId, splitType, category, isRecurring }; // [NEW]
     if (splits) {
       requestBody.splits = splits;
@@ -1167,6 +1171,10 @@ async function createExpense() {
   } catch (e) {
     console.error(e);
     addExpenseError.textContent = "Server error.";
+  } finally {
+    // Re-enable submit button
+    confirmAddExpenseBtn.disabled = false;
+    confirmAddExpenseBtn.textContent = "Add Expense";
   }
 }
 
