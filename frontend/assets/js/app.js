@@ -727,7 +727,19 @@ async function loadGroupExpenses(groupId) {
     }
 
     if (!data || data.length === 0) {
-      expenseListArea.innerHTML = "<p class='small'>No expenses yet. Add one!</p>";
+      expenseListArea.innerHTML = `
+        <div class="empty-state" style="text-align:center; padding:2rem 1rem;">
+          <div style="font-size:2.5rem; margin-bottom:0.5rem;">💰</div>
+          <p style="font-size:1.1rem; font-weight:600; margin-bottom:0.25rem;">No expenses yet</p>
+          <p style="font-size:0.85rem; color:var(--text-muted, #888); margin-bottom:1rem;">
+            Start tracking by adding your first expense to this group.
+          </p>
+          <button onclick="document.getElementById('openAddExpenseBtn').click()"
+                  style="padding:0.5rem 1.25rem; border-radius:8px; border:none; cursor:pointer;
+                         background:var(--accent, #6366f1); color:#fff; font-size:0.9rem; font-weight:500;">
+            + Add Expense
+          </button>
+        </div>`;
       return;
     }
 
